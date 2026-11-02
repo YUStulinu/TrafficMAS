@@ -1,0 +1,4 @@
+# Off-peak traffic on a 4x4 grid: the network is far from saturation.
+name: grid_light
+network: {type: grid, rows: 4, cols: 4, block: 200, lanes: 2, arterial_rows: [1], arterial_cols: [2]}
+demand: {rate: 6000, duration: 3600, profile: constant}

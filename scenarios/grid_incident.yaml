@@ -1,0 +1,8 @@
+# An accident blocks most of the arterial between n1_1 and n1_2 for 25 minutes,
+# and a side street is closed for roadworks for the whole hour.
+name: grid_incident
+network: {type: grid, rows: 4, cols: 4, block: 200, lanes: 2, arterial_rows: [1], arterial_cols: [2]}
+demand: {rate: 11000, duration: 3600, profile: constant}
+incidents:
+  - {link: "n1_1->n1_2", start: 600, end: 2100, capacity_factor: 0.25}
+  - {link: "n2_2->n2_3", start: 0, end: 3600, closed: true}

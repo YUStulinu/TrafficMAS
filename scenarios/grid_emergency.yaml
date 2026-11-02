@@ -1,0 +1,11 @@
+# Busy grid with ambulances: eight random ones plus two that cross each other at n1_2
+# at the same time, so their corridor requests conflict.
+name: grid_emergency
+network: {type: grid, rows: 4, cols: 4, block: 200, lanes: 2, arterial_rows: [1], arterial_cols: [2]}
+demand: {rate: 14000, duration: 3600, profile: constant}
+emergency:
+  mode: corridor
+  random: {count: 8, start: 300, interval: 350}
+  vehicles:
+    - {depart: 1500, origin: W1, dest: E1, priority: 2}
+    - {depart: 1500, origin: S2, dest: N2, priority: 1}

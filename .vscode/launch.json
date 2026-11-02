@@ -1,0 +1,69 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "TrafficMAS: live view - rush hour, negotiation + coordinator",
+      "type": "debugpy",
+      "request": "launch",
+      "module": "trafficmas",
+      "args": ["run", "scenarios/grid_rush_hour.yaml", "--controller", "negotiation_coord", "--live"],
+      "cwd": "${workspaceFolder}",
+      "console": "integratedTerminal"
+    },
+    {
+      "name": "TrafficMAS: live view - ambulance corridors",
+      "type": "debugpy",
+      "request": "launch",
+      "module": "trafficmas",
+      "args": ["run", "scenarios/grid_emergency.yaml", "--controller", "negotiation_coord", "--live", "--start-at", "1380"],
+      "cwd": "${workspaceFolder}",
+      "console": "integratedTerminal"
+    },
+    {
+      "name": "TrafficMAS: live view - Craiova city centre (OpenStreetMap)",
+      "type": "debugpy",
+      "request": "launch",
+      "module": "trafficmas",
+      "args": ["run", "scenarios/craiova_center.yaml", "--controller", "negotiation_coord", "--live", "--speed", "15"],
+      "cwd": "${workspaceFolder}",
+      "console": "integratedTerminal"
+    },
+    {
+      "name": "TrafficMAS: compare all controllers (pick a scenario)",
+      "type": "debugpy",
+      "request": "launch",
+      "module": "trafficmas",
+      "args": ["compare", "${input:scenario}", "--seeds", "3"],
+      "cwd": "${workspaceFolder}",
+      "console": "integratedTerminal"
+    },
+    {
+      "name": "TrafficMAS: main experiment (250 runs)",
+      "type": "debugpy",
+      "request": "launch",
+      "module": "trafficmas",
+      "args": ["experiment", "experiments/main.yaml", "--docs", "docs"],
+      "cwd": "${workspaceFolder}",
+      "console": "integratedTerminal"
+    },
+    {
+      "name": "TrafficMAS: tests",
+      "type": "debugpy",
+      "request": "launch",
+      "module": "pytest",
+      "args": ["-q"],
+      "cwd": "${workspaceFolder}",
+      "console": "integratedTerminal"
+    }
+  ],
+  "inputs": [
+    {
+      "id": "scenario",
+      "type": "pickString",
+      "description": "Scenario",
+      "options": ["scenarios/grid_light.yaml", "scenarios/grid_heavy.yaml", "scenarios/grid_rush_hour.yaml",
+                  "scenarios/grid_incident.yaml", "scenarios/grid_emergency.yaml", "scenarios/craiova_center.yaml"],
+      "default": "scenarios/grid_heavy.yaml"
+    }
+  ]
+}

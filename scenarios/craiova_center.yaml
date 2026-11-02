@@ -1,0 +1,10 @@
+# Real road network: the main roads of Craiova city centre around the University of Craiova
+# (Calea Unirii, Bulevardul Carol I, Strada Alexandru Ioan Cuza, Pasajul Universitatii ...),
+# imported from OpenStreetMap with scripts/fetch_osm.py. 53 junctions with traffic lights,
+# 17 gateways on the border of the area.
+name: craiova_center
+network: {type: osm, path: data/craiova_center.json}
+demand: {rate: 5500, duration: 3600, profile: rush_hour}
+emergency:
+  mode: corridor
+  random: {count: 4, start: 600, interval: 600}

@@ -1,0 +1,12 @@
+# Braess's paradox: two routes S-A-E and S-B-E, each with one bottleneck, plus a
+# shortcut A-B. Every driver is selfish and follows the congestion information.
+# Run it with and without the shortcut: network.shortcut: false.
+name: braess
+network: {type: braess, shortcut: true}
+demand:
+  rate: 1600
+  duration: 3600
+  od_pairs: [[S, E, 1.0]]
+  driver_profiles: {aggressive: 1.0}
+coordinator: {zones: 1, info_interval: 10}
+routing: {horizon: 1800}

@@ -1,0 +1,47 @@
+name: ablation
+description: 'Remove one mechanism of the negotiating controller at a time to see
+  what each contributes.
+
+  '
+seeds: 10
+reference: full
+scenarios:
+- scenarios/grid_heavy.yaml
+- scenarios/grid_rush_hour.yaml
+- scenarios/grid_incident.yaml
+- scenarios/craiova_center.yaml
+variants:
+- label: full
+  controller: negotiation_coord
+- label: no_coordinator
+  controller: negotiation
+- label: no_bids
+  controller: negotiation_coord
+  params:
+    use_bids: false
+- label: no_credits
+  controller: negotiation_coord
+  params:
+    credits: false
+- label: no_platoons
+  controller: negotiation_coord
+  params:
+    use_platoons: false
+- label: no_commitment
+  controller: negotiation_coord
+  params:
+    commit: false
+metrics:
+- avg_time_in_system
+- avg_wait_time
+- avg_queue
+- spillback_link_s
+- jain_fairness
+- messages_per_agent_min
+figures:
+- metric: avg_time_in_system
+  file: ablation_time_in_system.png
+  title: Ablation - average time in the network (lower is better)
+- metric: spillback_link_s
+  file: ablation_spillback.png
+  title: Ablation - spillback (lower is better)

@@ -1,0 +1,10 @@
+# Morning commute: demand peaks after 30 minutes and most trips go west->east and south->north.
+name: grid_rush_hour
+network: {type: grid, rows: 4, cols: 4, block: 200, lanes: 2, arterial_rows: [1], arterial_cols: [2]}
+demand:
+  rate: 13000
+  duration: 3600
+  profile: rush_hour
+  od_bias:
+    - {from: W, to: E, factor: 3.0}
+    - {from: S, to: N, factor: 2.0}

@@ -1,0 +1,54 @@
+name: selfish
+description: 'Manipulation test: junction n1_1 multiplies every bid it sends by 5.
+  With credits a bid has to be paid for, so the cheater runs out of credits; without
+  credits nothing stops it. Waiting times are measured at the cheater''s own approaches
+  and everywhere else.
+
+  '
+seeds: 10
+reference: honest
+scenarios:
+- scenarios/grid_heavy.yaml
+- scenarios/grid_rush_hour.yaml
+variants:
+- label: honest
+  controller: negotiation_coord
+  overrides:
+    selfish:
+      node: n1_1
+      factor: 1.0
+- label: selfish_x5
+  controller: negotiation_coord
+  overrides:
+    selfish:
+      node: n1_1
+      factor: 5.0
+- label: honest_no_credits
+  controller: negotiation_coord
+  params:
+    credits: false
+  overrides:
+    selfish:
+      node: n1_1
+      factor: 1.0
+- label: selfish_x5_no_credits
+  controller: negotiation_coord
+  params:
+    credits: false
+  overrides:
+    selfish:
+      node: n1_1
+      factor: 5.0
+metrics:
+- selfish_node_wait
+- others_wait
+- selfish_bid_share
+- avg_time_in_system
+- avg_wait_time
+figures:
+- metric: selfish_bid_share
+  file: selfish_bid_share.png
+  title: Share of all won bids taken by the cheating junction
+- metric: others_wait
+  file: selfish_others_wait.png
+  title: Waiting time at the other junctions (lower is better)

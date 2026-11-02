@@ -1,0 +1,19 @@
+name: main
+description: >
+  The four baselines against negotiation, with and without the zone coordinators,
+  from off-peak traffic to a saturated grid, an incident and the real Craiova network.
+seeds: 10
+reference: negotiation_coord
+scenarios:
+  - scenarios/grid_light.yaml
+  - scenarios/grid_heavy.yaml
+  - scenarios/grid_rush_hour.yaml
+  - scenarios/grid_incident.yaml
+  - scenarios/craiova_center.yaml
+controllers: [fixed, actuated, max_pressure, negotiation, negotiation_coord]
+metrics: [avg_time_in_system, avg_wait_time, avg_queue, max_queue, spillback_link_s, throughput_vph, completion_rate, jain_fairness, co2_g_per_trip, messages_per_agent_min]
+figures:
+  - {metric: avg_time_in_system, file: main_time_in_system.png, title: Average time in the network per vehicle (lower is better)}
+  - {metric: avg_queue, file: main_queue.png, title: Average queue per approach (lower is better)}
+  - {metric: spillback_link_s, file: main_spillback.png, title: Spillback - time links spend completely full (lower is better)}
+  - {metric: jain_fairness, file: main_fairness.png, title: Fairness of waiting times between approaches (higher is better)}

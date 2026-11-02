@@ -1,0 +1,20 @@
+name: robustness
+description: >
+  Negotiation over an unreliable radio: message latency and message loss on the bus.
+  Max-pressure needs no messages and is shown as the reference point.
+seeds: 10
+reference: ideal
+scenarios:
+  - scenarios/grid_rush_hour.yaml
+  - scenarios/craiova_center.yaml
+variants:
+  - {label: ideal, controller: negotiation_coord}
+  - {label: latency_1s, controller: negotiation_coord, overrides: {bus: {latency: 1.0}}}
+  - {label: latency_3s, controller: negotiation_coord, overrides: {bus: {latency: 3.0}}}
+  - {label: loss_10pct, controller: negotiation_coord, overrides: {bus: {loss: 0.1}}}
+  - {label: loss_30pct, controller: negotiation_coord, overrides: {bus: {loss: 0.3}}}
+  - {label: loss_50pct, controller: negotiation_coord, overrides: {bus: {loss: 0.5}}}
+  - {label: max_pressure, controller: max_pressure}
+metrics: [avg_time_in_system, avg_wait_time, spillback_link_s, ev_response_time, messages_per_agent_min]
+figures:
+  - {metric: avg_time_in_system, file: robustness_time_in_system.png, title: Latency and message loss - average time in the network (lower is better)}

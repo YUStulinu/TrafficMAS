@@ -1,0 +1,55 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "TrafficMAS: create .venv and install",
+      "type": "shell",
+      "command": "python -m venv .venv; .venv/Scripts/python -m pip install -e .[osm,dev]",
+      "problemMatcher": []
+    },
+    {
+      "label": "TrafficMAS: tests",
+      "type": "shell",
+      "command": ".venv/Scripts/python -m pytest -q",
+      "group": { "kind": "test", "isDefault": true },
+      "problemMatcher": []
+    },
+    {
+      "label": "TrafficMAS: lint (ruff)",
+      "type": "shell",
+      "command": ".venv/Scripts/ruff check trafficmas tests scripts",
+      "problemMatcher": []
+    },
+    {
+      "label": "TrafficMAS: live view (rush hour)",
+      "type": "shell",
+      "command": ".venv/Scripts/python -m trafficmas run scenarios/grid_rush_hour.yaml -c negotiation_coord --live",
+      "group": { "kind": "build", "isDefault": true },
+      "problemMatcher": []
+    },
+    {
+      "label": "TrafficMAS: compare controllers (grid_heavy)",
+      "type": "shell",
+      "command": ".venv/Scripts/python -m trafficmas compare scenarios/grid_heavy.yaml --seeds 3",
+      "problemMatcher": []
+    },
+    {
+      "label": "TrafficMAS: run all experiments (about 15 minutes)",
+      "type": "shell",
+      "command": "bash scripts/run_all_experiments.sh",
+      "problemMatcher": []
+    },
+    {
+      "label": "TrafficMAS: record the demo GIF (docs/demo.gif)",
+      "type": "shell",
+      "command": ".venv/Scripts/python -m trafficmas run scenarios/grid_emergency.yaml --record docs/demo.gif --record-seconds 150 --start-at 1380",
+      "problemMatcher": []
+    },
+    {
+      "label": "TrafficMAS: re-download the Craiova network (OpenStreetMap)",
+      "type": "shell",
+      "command": ".venv/Scripts/python scripts/fetch_osm.py",
+      "problemMatcher": []
+    }
+  ]
+}

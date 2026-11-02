@@ -1,0 +1,68 @@
+name: emergency
+description: 'Ambulance priority: no priority, local pre-emption and negotiated corridors.
+  Each run is paired with the same run without ambulances to measure the extra delay
+  they cause to the other vehicles.'
+seeds: 10
+reference: negotiation_coord/corridor
+paired_baseline: /no_ev
+scenarios:
+- scenarios/grid_emergency.yaml
+- scenarios/craiova_center.yaml
+variants:
+- label: fixed/none
+  controller: fixed
+  overrides:
+    emergency:
+      mode: none
+- label: fixed/preemption
+  controller: fixed
+  overrides:
+    emergency:
+      mode: preemption
+- label: fixed/corridor
+  controller: fixed
+  overrides:
+    emergency:
+      mode: corridor
+- label: fixed/no_ev
+  controller: fixed
+  overrides:
+    emergency:
+      vehicles: []
+      random: null
+- label: negotiation_coord/none
+  controller: negotiation_coord
+  overrides:
+    emergency:
+      mode: none
+- label: negotiation_coord/preemption
+  controller: negotiation_coord
+  overrides:
+    emergency:
+      mode: preemption
+- label: negotiation_coord/corridor
+  controller: negotiation_coord
+  overrides:
+    emergency:
+      mode: corridor
+- label: negotiation_coord/no_ev
+  controller: negotiation_coord
+  overrides:
+    emergency:
+      vehicles: []
+      random: null
+metrics:
+- ev_response_time
+- ev_delay
+- disruption_per_ev
+- ev_rejections
+- corridor_conflicts
+- avg_time_in_system
+- messages_per_agent_min
+figures:
+- metric: ev_response_time
+  file: emergency_response.png
+  title: Ambulance response time (lower is better)
+- metric: disruption_per_ev
+  file: emergency_disruption.png
+  title: Extra delay caused to the other vehicles, per ambulance (lower is better)

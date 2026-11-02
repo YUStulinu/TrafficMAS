@@ -1,0 +1,35 @@
+name: braess
+description: 'Braess''s paradox. Adding the shortcut A-B makes everybody slower. Informed
+  drivers choose their route selfishly from the congestion broadcasts; uninformed
+  drivers (80% of the conservative profile) take the free-flow shortest route, which
+  is the shortcut.
+
+  '
+seeds: 10
+reference: no_shortcut
+scenarios:
+- scenarios/braess.yaml
+variants:
+- label: no_shortcut
+  controller: fixed
+  overrides:
+    network:
+      shortcut: false
+- label: shortcut_informed
+  controller: fixed
+- label: shortcut_uninformed
+  controller: fixed
+  overrides:
+    demand:
+      driver_profiles:
+        conservative: 1.0
+metrics:
+- avg_time_in_system
+- avg_travel_time
+- avg_wait_time
+- completion_rate
+- avg_reroutes
+figures:
+- metric: avg_time_in_system
+  file: braess_time_in_system.png
+  title: Braess network - average time in the network (lower is better)
