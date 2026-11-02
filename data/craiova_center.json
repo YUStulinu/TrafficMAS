@@ -1,0 +1,1749 @@
+{
+ "place": "Craiova",
+ "center": [
+  44.3195,
+  23.796
+ ],
+ "radius_m": 900.0,
+ "source": "OpenStreetMap contributors (ODbL)",
+ "nodes": [
+  {
+   "id": "0",
+   "x": 1391.5,
+   "y": 0.0
+  },
+  {
+   "id": "1",
+   "x": 1411.0,
+   "y": 49.4
+  },
+  {
+   "id": "2",
+   "x": 1363.3,
+   "y": 232.7
+  },
+  {
+   "id": "3",
+   "x": 1334.2,
+   "y": 63.3
+  },
+  {
+   "id": "4",
+   "x": 778.7,
+   "y": 792.9
+  },
+  {
+   "id": "5",
+   "x": 643.1,
+   "y": 797.0
+  },
+  {
+   "id": "6",
+   "x": 790.3,
+   "y": 692.5
+  },
+  {
+   "id": "7",
+   "x": 905.4,
+   "y": 205.0
+  },
+  {
+   "id": "8",
+   "x": 714.3,
+   "y": 165.0
+  },
+  {
+   "id": "10",
+   "x": 1278.2,
+   "y": 1491.0
+  },
+  {
+   "id": "11",
+   "x": 1086.5,
+   "y": 1617.0
+  },
+  {
+   "id": "12",
+   "x": 1444.8,
+   "y": 1405.5
+  },
+  {
+   "id": "13",
+   "x": 874.0,
+   "y": 1195.0
+  },
+  {
+   "id": "14",
+   "x": 867.9,
+   "y": 1091.6
+  },
+  {
+   "id": "15",
+   "x": 868.7,
+   "y": 373.0
+  },
+  {
+   "id": "16",
+   "x": 1277.9,
+   "y": 115.6
+  },
+  {
+   "id": "17",
+   "x": 1552.0,
+   "y": 527.9
+  },
+  {
+   "id": "18",
+   "x": 1352.0,
+   "y": 545.6
+  },
+  {
+   "id": "19",
+   "x": 1706.0,
+   "y": 450.7
+  },
+  {
+   "id": "20",
+   "x": 1686.7,
+   "y": 646.7
+  },
+  {
+   "id": "21",
+   "x": 362.9,
+   "y": 664.9
+  },
+  {
+   "id": "22",
+   "x": 349.0,
+   "y": 711.0
+  },
+  {
+   "id": "23",
+   "x": 395.4,
+   "y": 541.6
+  },
+  {
+   "id": "24",
+   "x": 138.2,
+   "y": 889.9
+  },
+  {
+   "id": "25",
+   "x": 106.8,
+   "y": 970.0
+  },
+  {
+   "id": "26",
+   "x": 290.1,
+   "y": 864.6
+  },
+  {
+   "id": "27",
+   "x": 393.4,
+   "y": 849.6
+  },
+  {
+   "id": "28",
+   "x": 354.1,
+   "y": 80.3
+  },
+  {
+   "id": "29",
+   "x": 587.8,
+   "y": 1244.1
+  },
+  {
+   "id": "30",
+   "x": 527.6,
+   "y": 1311.6
+  },
+  {
+   "id": "31",
+   "x": 866.1,
+   "y": 1424.3
+  },
+  {
+   "id": "32",
+   "x": 570.4,
+   "y": 1356.7
+  },
+  {
+   "id": "33",
+   "x": 1524.5,
+   "y": 1282.5
+  },
+  {
+   "id": "34",
+   "x": 1578.1,
+   "y": 1077.8
+  },
+  {
+   "id": "35",
+   "x": 1409.0,
+   "y": 1085.2
+  },
+  {
+   "id": "36",
+   "x": 1378.0,
+   "y": 955.5
+  },
+  {
+   "id": "37",
+   "x": 1349.2,
+   "y": 705.7
+  },
+  {
+   "id": "38",
+   "x": 1335.2,
+   "y": 433.5
+  },
+  {
+   "id": "39",
+   "x": 1367.9,
+   "y": 851.0
+  },
+  {
+   "id": "40",
+   "x": 1364.4,
+   "y": 378.2
+  },
+  {
+   "id": "41",
+   "x": 535.2,
+   "y": 1013.1
+  },
+  {
+   "id": "42",
+   "x": 748.2,
+   "y": 1015.4
+  },
+  {
+   "id": "43",
+   "x": 301.8,
+   "y": 994.2
+  },
+  {
+   "id": "44",
+   "x": 482.8,
+   "y": 1445.2
+  },
+  {
+   "id": "45",
+   "x": 0.0,
+   "y": 973.2
+  },
+  {
+   "id": "46",
+   "x": 656.9,
+   "y": 274.6
+  },
+  {
+   "id": "47",
+   "x": 591.1,
+   "y": 136.5
+  },
+  {
+   "id": "49",
+   "x": 627.7,
+   "y": 326.7
+  },
+  {
+   "id": "50",
+   "x": 511.7,
+   "y": 546.6
+  },
+  {
+   "id": "51",
+   "x": 1183.8,
+   "y": 296.5
+  },
+  {
+   "id": "52",
+   "x": 610.1,
+   "y": 735.6
+  },
+  {
+   "id": "53",
+   "x": 610.1,
+   "y": 1191.8
+  },
+  {
+   "id": "54",
+   "x": 451.8,
+   "y": 370.6
+  },
+  {
+   "id": "55",
+   "x": 380.6,
+   "y": 432.7
+  },
+  {
+   "id": "56",
+   "x": 228.7,
+   "y": 457.1
+  },
+  {
+   "id": "57",
+   "x": 465.6,
+   "y": 490.8
+  },
+  {
+   "id": "58",
+   "x": 328.9,
+   "y": 525.7
+  },
+  {
+   "id": "59",
+   "x": 1555.8,
+   "y": 660.9
+  },
+  {
+   "id": "60",
+   "x": 1794.9,
+   "y": 637.4
+  },
+  {
+   "id": "61",
+   "x": 1576.7,
+   "y": 817.7
+  },
+  {
+   "id": "62",
+   "x": 458.6,
+   "y": 543.7
+  },
+  {
+   "id": "63",
+   "x": 722.3,
+   "y": 336.2
+  },
+  {
+   "id": "64",
+   "x": 390.9,
+   "y": 1194.0
+  },
+  {
+   "id": "65",
+   "x": 460.4,
+   "y": 1349.6
+  },
+  {
+   "id": "66",
+   "x": 617.4,
+   "y": 1207.2
+  },
+  {
+   "id": "67",
+   "x": 1160.1,
+   "y": 913.0
+  },
+  {
+   "id": "68",
+   "x": 837.3,
+   "y": 1008.6
+  },
+  {
+   "id": "69",
+   "x": 1153.9,
+   "y": 895.6
+  },
+  {
+   "id": "70",
+   "x": 1244.0,
+   "y": 730.6
+  },
+  {
+   "id": "71",
+   "x": 435.5,
+   "y": 616.4
+  }
+ ],
+ "edges": [
+  {
+   "u": "0",
+   "v": "1",
+   "length": 55.8,
+   "lanes": 2,
+   "speed_kmh": 50.0,
+   "highway": "secondary",
+   "name": "Strada Amza Pellea"
+  },
+  {
+   "u": "1",
+   "v": "2",
+   "length": 190.2,
+   "lanes": 1,
+   "speed_kmh": 50.0,
+   "highway": "secondary",
+   "name": "Strada Arie\u0219"
+  },
+  {
+   "u": "1",
+   "v": "3",
+   "length": 80.5,
+   "lanes": 2,
+   "speed_kmh": 50.0,
+   "highway": "secondary",
+   "name": "Strada General Dragalina"
+  },
+  {
+   "u": "2",
+   "v": "1",
+   "length": 190.2,
+   "lanes": 1,
+   "speed_kmh": 50.0,
+   "highway": "secondary",
+   "name": "Strada Arie\u0219"
+  },
+  {
+   "u": "2",
+   "v": "17",
+   "length": 358.4,
+   "lanes": 1,
+   "speed_kmh": 50.0,
+   "highway": "tertiary",
+   "name": "Strada Alexandru Macedonski"
+  },
+  {
+   "u": "2",
+   "v": "40",
+   "length": 145.8,
+   "lanes": 2,
+   "speed_kmh": 50.0,
+   "highway": "secondary",
+   "name": "Strada Arie\u0219"
+  },
+  {
+   "u": "3",
+   "v": "0",
+   "length": 85.3,
+   "lanes": 2,
+   "speed_kmh": 50.0,
+   "highway": "secondary",
+   "name": "Strada Caracal"
+  },
+  {
+   "u": "4",
+   "v": "5",
+   "length": 135.7,
+   "lanes": 2,
+   "speed_kmh": 50.0,
+   "highway": "tertiary",
+   "name": "Strada Mihai Viteazul"
+  },
+  {
+   "u": "4",
+   "v": "6",
+   "length": 101.1,
+   "lanes": 2,
+   "speed_kmh": 50.0,
+   "highway": "secondary",
+   "name": "Calea Unirii"
+  },
+  {
+   "u": "5",
+   "v": "27",
+   "length": 256.1,
+   "lanes": 1,
+   "speed_kmh": 50.0,
+   "highway": "tertiary",
+   "name": "Strada Mihai Viteazul"
+  },
+  {
+   "u": "5",
+   "v": "52",
+   "length": 72.0,
+   "lanes": 2,
+   "speed_kmh": 50.0,
+   "highway": "tertiary",
+   "name": "Strada Ion Maiorescu"
+  },
+  {
+   "u": "6",
+   "v": "70",
+   "length": 456.6,
+   "lanes": 2,
+   "speed_kmh": 50.0,
+   "highway": "secondary",
+   "name": "Strada Alexandru Ioan Cuza"
+  },
+  {
+   "u": "6",
+   "v": "52",
+   "length": 191.1,
+   "lanes": 1,
+   "speed_kmh": 50.0,
+   "highway": "tertiary",
+   "name": "Strada Popa \u0218apc\u0103"
+  },
+  {
+   "u": "7",
+   "v": "8",
+   "length": 194.7,
+   "lanes": 2,
+   "speed_kmh": 50.0,
+   "highway": "tertiary",
+   "name": "Bulevardul \u0218tirbei Vod\u0103"
+  },
+  {
+   "u": "8",
+   "v": "7",
+   "length": 194.7,
+   "lanes": 2,
+   "speed_kmh": 50.0,
+   "highway": "tertiary",
+   "name": "Bulevardul \u0218tirbei Vod\u0103"
+  },
+  {
+   "u": "8",
+   "v": "46",
+   "length": 123.7,
+   "lanes": 2,
+   "speed_kmh": 50.0,
+   "highway": "tertiary",
+   "name": "Strada Matei Basarab"
+  },
+  {
+   "u": "8",
+   "v": "47",
+   "length": 126.0,
+   "lanes": 2,
+   "speed_kmh": 50.0,
+   "highway": "tertiary",
+   "name": "Bulevardul \u0218tirbei Vod\u0103"
+  },
+  {
+   "u": "10",
+   "v": "11",
+   "length": 231.7,
+   "lanes": 1,
+   "speed_kmh": 50.0,
+   "highway": "tertiary",
+   "name": "Strada \u0218erban Vod\u0103"
+  },
+  {
+   "u": "10",
+   "v": "12",
+   "length": 187.5,
+   "lanes": 1,
+   "speed_kmh": 50.0,
+   "highway": "tertiary",
+   "name": "Strada \u0218erban Vod\u0103"
+  },
+  {
+   "u": "10",
+   "v": "13",
+   "length": 544.0,
+   "lanes": 2,
+   "speed_kmh": 50.0,
+   "highway": "tertiary",
+   "name": "Strada P\u0103ltini\u0219"
+  },
+  {
+   "u": "11",
+   "v": "10",
+   "length": 231.7,
+   "lanes": 1,
+   "speed_kmh": 50.0,
+   "highway": "tertiary",
+   "name": "Strada \u0218erban Vod\u0103"
+  },
+  {
+   "u": "11",
+   "v": "31",
+   "length": 294.6,
+   "lanes": 1,
+   "speed_kmh": 50.0,
+   "highway": "tertiary",
+   "name": "Strada Constantin Br\u00e2ncu\u0219i"
+  },
+  {
+   "u": "12",
+   "v": "10",
+   "length": 187.5,
+   "lanes": 1,
+   "speed_kmh": 50.0,
+   "highway": "tertiary",
+   "name": "Strada \u0218erban Vod\u0103"
+  },
+  {
+   "u": "13",
+   "v": "14",
+   "length": 104.1,
+   "lanes": 2,
+   "speed_kmh": 50.0,
+   "highway": "tertiary",
+   "name": "Strada Principatele Unite"
+  },
+  {
+   "u": "14",
+   "v": "42",
+   "length": 154.4,
+   "lanes": 2,
+   "speed_kmh": 40,
+   "highway": "tertiary",
+   "name": "Strada \u0218tefan cel Mare"
+  },
+  {
+   "u": "14",
+   "v": "12",
+   "length": 661.7,
+   "lanes": 2,
+   "speed_kmh": 50.0,
+   "highway": "tertiary",
+   "name": "Strada \u0218tefan cel Mare"
+  },
+  {
+   "u": "15",
+   "v": "7",
+   "length": 173.7,
+   "lanes": 1,
+   "speed_kmh": 50.0,
+   "highway": "tertiary",
+   "name": "Calea Unirii"
+  },
+  {
+   "u": "15",
+   "v": "63",
+   "length": 157.7,
+   "lanes": 2,
+   "speed_kmh": 50.0,
+   "highway": "tertiary",
+   "name": "Strada Sf\u00e2ntul Dumitru"
+  },
+  {
+   "u": "16",
+   "v": "3",
+   "length": 76.8,
+   "lanes": 2,
+   "speed_kmh": 50.0,
+   "highway": "tertiary",
+   "name": "Strada Caracal"
+  },
+  {
+   "u": "16",
+   "v": "2",
+   "length": 145.3,
+   "lanes": 3,
+   "speed_kmh": 50.0,
+   "highway": "secondary",
+   "name": "Strada Alexandru Macedonski"
+  },
+  {
+   "u": "17",
+   "v": "2",
+   "length": 358.4,
+   "lanes": 1,
+   "speed_kmh": 50.0,
+   "highway": "tertiary",
+   "name": "Strada Alexandru Macedonski"
+  },
+  {
+   "u": "17",
+   "v": "18",
+   "length": 206.5,
+   "lanes": 1,
+   "speed_kmh": 50.0,
+   "highway": "tertiary",
+   "name": "Strada \u00cemp\u0103ratul Traian"
+  },
+  {
+   "u": "17",
+   "v": "19",
+   "length": 172.7,
+   "lanes": 1,
+   "speed_kmh": 50.0,
+   "highway": "tertiary",
+   "name": "Strada \u00cemp\u0103ratul Traian"
+  },
+  {
+   "u": "17",
+   "v": "20",
+   "length": 188.6,
+   "lanes": 2,
+   "speed_kmh": 50.0,
+   "highway": "tertiary",
+   "name": "Strada Alexandru Macedonski"
+  },
+  {
+   "u": "18",
+   "v": "17",
+   "length": 206.5,
+   "lanes": 1,
+   "speed_kmh": 50.0,
+   "highway": "tertiary",
+   "name": "Strada \u00cemp\u0103ratul Traian"
+  },
+  {
+   "u": "18",
+   "v": "38",
+   "length": 138.9,
+   "lanes": 1,
+   "speed_kmh": 50.0,
+   "highway": "secondary",
+   "name": "Strada Arie\u0219"
+  },
+  {
+   "u": "18",
+   "v": "37",
+   "length": 167.3,
+   "lanes": 2,
+   "speed_kmh": 50,
+   "highway": "secondary",
+   "name": "Strada Arie\u0219"
+  },
+  {
+   "u": "19",
+   "v": "17",
+   "length": 172.7,
+   "lanes": 1,
+   "speed_kmh": 50.0,
+   "highway": "tertiary",
+   "name": "Strada \u00cemp\u0103ratul Traian"
+  },
+  {
+   "u": "20",
+   "v": "59",
+   "length": 131.2,
+   "lanes": 2,
+   "speed_kmh": 50.0,
+   "highway": "secondary",
+   "name": "Strada Alexandru Ioan Cuza"
+  },
+  {
+   "u": "20",
+   "v": "60",
+   "length": 108.3,
+   "lanes": 2,
+   "speed_kmh": 50.0,
+   "highway": "secondary",
+   "name": "Strada Alexandru Ioan Cuza"
+  },
+  {
+   "u": "21",
+   "v": "22",
+   "length": 48.1,
+   "lanes": 1,
+   "speed_kmh": 50.0,
+   "highway": "tertiary",
+   "name": "Strada Br\u00e2ndu\u0219a"
+  },
+  {
+   "u": "21",
+   "v": "23",
+   "length": 127.6,
+   "lanes": 2,
+   "speed_kmh": 50.0,
+   "highway": "tertiary",
+   "name": "Strada Br\u00e2ndu\u0219a"
+  },
+  {
+   "u": "22",
+   "v": "21",
+   "length": 48.1,
+   "lanes": 1,
+   "speed_kmh": 50.0,
+   "highway": "tertiary",
+   "name": "Strada Br\u00e2ndu\u0219a"
+  },
+  {
+   "u": "22",
+   "v": "26",
+   "length": 164.6,
+   "lanes": 2,
+   "speed_kmh": 50.0,
+   "highway": "tertiary",
+   "name": "Strada Br\u00e2ndu\u0219a"
+  },
+  {
+   "u": "23",
+   "v": "58",
+   "length": 68.5,
+   "lanes": 1,
+   "speed_kmh": 40,
+   "highway": "tertiary",
+   "name": "Strada Madona Dudu"
+  },
+  {
+   "u": "23",
+   "v": "62",
+   "length": 63.1,
+   "lanes": 1,
+   "speed_kmh": 40,
+   "highway": "tertiary",
+   "name": "Strada Madona Dudu"
+  },
+  {
+   "u": "24",
+   "v": "25",
+   "length": 86.0,
+   "lanes": 2,
+   "speed_kmh": 50.0,
+   "highway": "tertiary",
+   "name": "Strada Mihai Viteazul"
+  },
+  {
+   "u": "24",
+   "v": "22",
+   "length": 286.4,
+   "lanes": 2,
+   "speed_kmh": 50.0,
+   "highway": "tertiary",
+   "name": "Strada Libert\u0103\u021bii"
+  },
+  {
+   "u": "24",
+   "v": "26",
+   "length": 154.8,
+   "lanes": 1,
+   "speed_kmh": 50.0,
+   "highway": "tertiary",
+   "name": "Strada Mihai Viteazul"
+  },
+  {
+   "u": "25",
+   "v": "24",
+   "length": 86.0,
+   "lanes": 2,
+   "speed_kmh": 50.0,
+   "highway": "tertiary",
+   "name": "Strada Mihai Viteazul"
+  },
+  {
+   "u": "25",
+   "v": "43",
+   "length": 196.7,
+   "lanes": 2,
+   "speed_kmh": 50.0,
+   "highway": "secondary",
+   "name": "Strada Brestei"
+  },
+  {
+   "u": "25",
+   "v": "45",
+   "length": 109.5,
+   "lanes": 2,
+   "speed_kmh": 50.0,
+   "highway": "secondary",
+   "name": "Strada Brestei"
+  },
+  {
+   "u": "26",
+   "v": "24",
+   "length": 154.8,
+   "lanes": 1,
+   "speed_kmh": 50.0,
+   "highway": "tertiary",
+   "name": "Strada Mihai Viteazul"
+  },
+  {
+   "u": "26",
+   "v": "27",
+   "length": 104.1,
+   "lanes": 1,
+   "speed_kmh": 50.0,
+   "highway": "tertiary",
+   "name": "Strada Mihai Viteazul"
+  },
+  {
+   "u": "27",
+   "v": "41",
+   "length": 219.7,
+   "lanes": 2,
+   "speed_kmh": 50.0,
+   "highway": "tertiary",
+   "name": "Strada Bibescu"
+  },
+  {
+   "u": "27",
+   "v": "5",
+   "length": 256.1,
+   "lanes": 1,
+   "speed_kmh": 50.0,
+   "highway": "tertiary",
+   "name": "Strada Mihai Viteazul"
+  },
+  {
+   "u": "27",
+   "v": "26",
+   "length": 104.1,
+   "lanes": 1,
+   "speed_kmh": 50.0,
+   "highway": "tertiary",
+   "name": "Strada Mihai Viteazul"
+  },
+  {
+   "u": "28",
+   "v": "47",
+   "length": 243.8,
+   "lanes": 2,
+   "speed_kmh": 50.0,
+   "highway": "tertiary",
+   "name": "Bulevardul \u0218tirbei Vod\u0103"
+  },
+  {
+   "u": "29",
+   "v": "30",
+   "length": 100.5,
+   "lanes": 2,
+   "speed_kmh": 50.0,
+   "highway": "secondary",
+   "name": "Bulevardul Nicolae Titulescu"
+  },
+  {
+   "u": "29",
+   "v": "31",
+   "length": 333.6,
+   "lanes": 2,
+   "speed_kmh": 50.0,
+   "highway": "tertiary",
+   "name": "Strada Constantin Br\u00e2ncu\u0219i"
+  },
+  {
+   "u": "29",
+   "v": "32",
+   "length": 119.4,
+   "lanes": 1,
+   "speed_kmh": 50.0,
+   "highway": "secondary",
+   "name": "Strada Amaradia"
+  },
+  {
+   "u": "29",
+   "v": "53",
+   "length": 64.6,
+   "lanes": 2,
+   "speed_kmh": 50.0,
+   "highway": "secondary",
+   "name": "Bulevardul Nicolae Titulescu"
+  },
+  {
+   "u": "30",
+   "v": "65",
+   "length": 81.7,
+   "lanes": 2,
+   "speed_kmh": 50.0,
+   "highway": "secondary",
+   "name": "Bulevardul Nicolae Titulescu"
+  },
+  {
+   "u": "31",
+   "v": "11",
+   "length": 294.6,
+   "lanes": 1,
+   "speed_kmh": 50.0,
+   "highway": "tertiary",
+   "name": "Strada Constantin Br\u00e2ncu\u0219i"
+  },
+  {
+   "u": "31",
+   "v": "13",
+   "length": 229.6,
+   "lanes": 2,
+   "speed_kmh": 50.0,
+   "highway": "tertiary",
+   "name": "Strada Principatele Unite"
+  },
+  {
+   "u": "32",
+   "v": "30",
+   "length": 71.5,
+   "lanes": 2,
+   "speed_kmh": 50.0,
+   "highway": "tertiary",
+   "name": "Strada Adolf Waidman"
+  },
+  {
+   "u": "32",
+   "v": "29",
+   "length": 119.4,
+   "lanes": 1,
+   "speed_kmh": 50.0,
+   "highway": "secondary",
+   "name": "Strada Amaradia"
+  },
+  {
+   "u": "32",
+   "v": "44",
+   "length": 129.4,
+   "lanes": 2,
+   "speed_kmh": 50.0,
+   "highway": "tertiary",
+   "name": "Strada George Enescu"
+  },
+  {
+   "u": "33",
+   "v": "34",
+   "length": 211.8,
+   "lanes": 2,
+   "speed_kmh": 40,
+   "highway": "tertiary",
+   "name": "Strada Nicolae B\u0103lcescu"
+  },
+  {
+   "u": "33",
+   "v": "35",
+   "length": 230.5,
+   "lanes": 1,
+   "speed_kmh": 50.0,
+   "highway": "secondary",
+   "name": "Bulevardul Carol I"
+  },
+  {
+   "u": "34",
+   "v": "35",
+   "length": 182.6,
+   "lanes": 2,
+   "speed_kmh": 40,
+   "highway": "tertiary",
+   "name": "Strada Vasile Alecsandri"
+  },
+  {
+   "u": "34",
+   "v": "61",
+   "length": 261.2,
+   "lanes": 2,
+   "speed_kmh": 40,
+   "highway": "tertiary",
+   "name": "Strada Nicolae B\u0103lcescu"
+  },
+  {
+   "u": "35",
+   "v": "36",
+   "length": 133.5,
+   "lanes": 1,
+   "speed_kmh": 50.0,
+   "highway": "secondary",
+   "name": "Bulevardul Carol I"
+  },
+  {
+   "u": "35",
+   "v": "33",
+   "length": 230.5,
+   "lanes": 1,
+   "speed_kmh": 50.0,
+   "highway": "secondary",
+   "name": "Bulevardul Carol I"
+  },
+  {
+   "u": "36",
+   "v": "35",
+   "length": 133.5,
+   "lanes": 1,
+   "speed_kmh": 50.0,
+   "highway": "secondary",
+   "name": "Bulevardul Carol I"
+  },
+  {
+   "u": "36",
+   "v": "39",
+   "length": 105.0,
+   "lanes": 2,
+   "speed_kmh": 50.0,
+   "highway": "secondary",
+   "name": "Bulevardul Carol I"
+  },
+  {
+   "u": "37",
+   "v": "59",
+   "length": 214.2,
+   "lanes": 2,
+   "speed_kmh": 50.0,
+   "highway": "secondary",
+   "name": "Strada Alexandru Ioan Cuza"
+  },
+  {
+   "u": "37",
+   "v": "18",
+   "length": 184.2,
+   "lanes": 2,
+   "speed_kmh": 50,
+   "highway": "secondary",
+   "name": "Strada Arie\u0219"
+  },
+  {
+   "u": "37",
+   "v": "70",
+   "length": 108.5,
+   "lanes": 2,
+   "speed_kmh": 50.0,
+   "highway": "secondary",
+   "name": "Strada Alexandru Ioan Cuza"
+  },
+  {
+   "u": "37",
+   "v": "39",
+   "length": 148.2,
+   "lanes": 2,
+   "speed_kmh": 50.0,
+   "highway": "secondary",
+   "name": "Bulevardul Carol I"
+  },
+  {
+   "u": "38",
+   "v": "15",
+   "length": 481.7,
+   "lanes": 2,
+   "speed_kmh": 50.0,
+   "highway": "tertiary",
+   "name": "Strada Mihail Kog\u0103lniceanu"
+  },
+  {
+   "u": "38",
+   "v": "51",
+   "length": 221.0,
+   "lanes": 2,
+   "speed_kmh": 50.0,
+   "highway": "secondary",
+   "name": "Strada C.D. Fortunescu"
+  },
+  {
+   "u": "38",
+   "v": "40",
+   "length": 63.4,
+   "lanes": 1,
+   "speed_kmh": 50,
+   "highway": "secondary",
+   "name": "Strada Arie\u0219"
+  },
+  {
+   "u": "38",
+   "v": "39",
+   "length": 438.4,
+   "lanes": 1,
+   "speed_kmh": 40.0,
+   "highway": "secondary",
+   "name": "Pasajul Universit\u0103\u021bii"
+  },
+  {
+   "u": "39",
+   "v": "38",
+   "length": 438.4,
+   "lanes": 1,
+   "speed_kmh": 40.0,
+   "highway": "secondary",
+   "name": "Pasajul Universit\u0103\u021bii"
+  },
+  {
+   "u": "39",
+   "v": "36",
+   "length": 105.0,
+   "lanes": 2,
+   "speed_kmh": 50.0,
+   "highway": "secondary",
+   "name": "Bulevardul Carol I"
+  },
+  {
+   "u": "39",
+   "v": "67",
+   "length": 218.8,
+   "lanes": 3,
+   "speed_kmh": 50.0,
+   "highway": "secondary",
+   "name": "Calea Bucure\u0219ti"
+  },
+  {
+   "u": "39",
+   "v": "61",
+   "length": 222.8,
+   "lanes": 2,
+   "speed_kmh": 50.0,
+   "highway": "secondary",
+   "name": "Calea Bucure\u0219ti"
+  },
+  {
+   "u": "39",
+   "v": "37",
+   "length": 153.4,
+   "lanes": 2,
+   "speed_kmh": 50.0,
+   "highway": "secondary",
+   "name": "Bulevardul Carol I"
+  },
+  {
+   "u": "40",
+   "v": "18",
+   "length": 168.0,
+   "lanes": 1,
+   "speed_kmh": 50,
+   "highway": "secondary",
+   "name": "Strada Arie\u0219"
+  },
+  {
+   "u": "40",
+   "v": "38",
+   "length": 79.3,
+   "lanes": 1,
+   "speed_kmh": 50.0,
+   "highway": "secondary",
+   "name": "Pasajul Universit\u0103\u021bii"
+  },
+  {
+   "u": "40",
+   "v": "2",
+   "length": 145.8,
+   "lanes": 2,
+   "speed_kmh": 50.0,
+   "highway": "secondary",
+   "name": "Strada Arie\u0219"
+  },
+  {
+   "u": "41",
+   "v": "42",
+   "length": 216.2,
+   "lanes": 2,
+   "speed_kmh": 50.0,
+   "highway": "secondary",
+   "name": "Strada Brestei"
+  },
+  {
+   "u": "41",
+   "v": "43",
+   "length": 234.7,
+   "lanes": 1,
+   "speed_kmh": 50.0,
+   "highway": "secondary",
+   "name": "Strada Brestei"
+  },
+  {
+   "u": "42",
+   "v": "41",
+   "length": 216.2,
+   "lanes": 2,
+   "speed_kmh": 50.0,
+   "highway": "secondary",
+   "name": "Strada Brestei"
+  },
+  {
+   "u": "42",
+   "v": "4",
+   "length": 224.6,
+   "lanes": 2,
+   "speed_kmh": 50.0,
+   "highway": "secondary",
+   "name": "Calea Unirii"
+  },
+  {
+   "u": "42",
+   "v": "66",
+   "length": 240.7,
+   "lanes": 1,
+   "speed_kmh": 50.0,
+   "highway": "secondary",
+   "name": "Bulevardul Nicolae Titulescu"
+  },
+  {
+   "u": "42",
+   "v": "14",
+   "length": 143.8,
+   "lanes": 2,
+   "speed_kmh": 50.0,
+   "highway": "tertiary",
+   "name": "Strada \u0218tefan cel Mare"
+  },
+  {
+   "u": "42",
+   "v": "69",
+   "length": 425.2,
+   "lanes": 1,
+   "speed_kmh": 50.0,
+   "highway": "secondary",
+   "name": "Calea Bucure\u0219ti"
+  },
+  {
+   "u": "43",
+   "v": "25",
+   "length": 196.7,
+   "lanes": 2,
+   "speed_kmh": 50.0,
+   "highway": "secondary",
+   "name": "Strada Brestei"
+  },
+  {
+   "u": "43",
+   "v": "64",
+   "length": 219.0,
+   "lanes": 2,
+   "speed_kmh": 50.0,
+   "highway": "tertiary",
+   "name": "Strada Iancu Jianu"
+  },
+  {
+   "u": "43",
+   "v": "41",
+   "length": 234.7,
+   "lanes": 1,
+   "speed_kmh": 50.0,
+   "highway": "secondary",
+   "name": "Strada Brestei"
+  },
+  {
+   "u": "44",
+   "v": "65",
+   "length": 103.1,
+   "lanes": 2,
+   "speed_kmh": 50.0,
+   "highway": "tertiary",
+   "name": "Strada Iancu Jianu"
+  },
+  {
+   "u": "45",
+   "v": "25",
+   "length": 109.5,
+   "lanes": 2,
+   "speed_kmh": 50.0,
+   "highway": "secondary",
+   "name": "Strada Brestei"
+  },
+  {
+   "u": "46",
+   "v": "49",
+   "length": 59.8,
+   "lanes": 2,
+   "speed_kmh": 50.0,
+   "highway": "tertiary",
+   "name": "Strada Matei Basarab"
+  },
+  {
+   "u": "47",
+   "v": "8",
+   "length": 126.0,
+   "lanes": 2,
+   "speed_kmh": 50.0,
+   "highway": "tertiary",
+   "name": "Bulevardul \u0218tirbei Vod\u0103"
+  },
+  {
+   "u": "47",
+   "v": "28",
+   "length": 243.8,
+   "lanes": 2,
+   "speed_kmh": 50.0,
+   "highway": "tertiary",
+   "name": "Bulevardul \u0218tirbei Vod\u0103"
+  },
+  {
+   "u": "49",
+   "v": "50",
+   "length": 249.1,
+   "lanes": 2,
+   "speed_kmh": 50.0,
+   "highway": "tertiary",
+   "name": "Strada Matei Basarab"
+  },
+  {
+   "u": "50",
+   "v": "71",
+   "length": 103.2,
+   "lanes": 2,
+   "speed_kmh": 50.0,
+   "highway": "tertiary",
+   "name": "Strada Libert\u0103\u021bii"
+  },
+  {
+   "u": "50",
+   "v": "52",
+   "length": 240.7,
+   "lanes": 1,
+   "speed_kmh": 50.0,
+   "highway": "tertiary",
+   "name": "Strada Madona Dudu"
+  },
+  {
+   "u": "50",
+   "v": "62",
+   "length": 53.0,
+   "lanes": 1,
+   "speed_kmh": 50.0,
+   "highway": "tertiary",
+   "name": "Strada Madona Dudu"
+  },
+  {
+   "u": "51",
+   "v": "16",
+   "length": 205.3,
+   "lanes": 2,
+   "speed_kmh": 50.0,
+   "highway": "tertiary",
+   "name": "Strada Fra\u021bii Buze\u0219ti"
+  },
+  {
+   "u": "52",
+   "v": "6",
+   "length": 191.1,
+   "lanes": 1,
+   "speed_kmh": 50.0,
+   "highway": "tertiary",
+   "name": "Strada Popa \u0218apc\u0103"
+  },
+  {
+   "u": "52",
+   "v": "5",
+   "length": 73.5,
+   "lanes": 2,
+   "speed_kmh": 50.0,
+   "highway": "tertiary",
+   "name": "Strada Ion Maiorescu"
+  },
+  {
+   "u": "52",
+   "v": "50",
+   "length": 240.7,
+   "lanes": 1,
+   "speed_kmh": 50.0,
+   "highway": "tertiary",
+   "name": "Strada Madona Dudu"
+  },
+  {
+   "u": "53",
+   "v": "69",
+   "length": 647.3,
+   "lanes": 2,
+   "speed_kmh": 50.0,
+   "highway": "secondary",
+   "name": "Pasajul Nicolae Titulescu"
+  },
+  {
+   "u": "53",
+   "v": "42",
+   "length": 228.4,
+   "lanes": 1,
+   "speed_kmh": 50.0,
+   "highway": "secondary",
+   "name": "Bulevardul Nicolae Titulescu"
+  },
+  {
+   "u": "54",
+   "v": "47",
+   "length": 276.0,
+   "lanes": 2,
+   "speed_kmh": 50.0,
+   "highway": "tertiary",
+   "name": "Strada C\u00e2mpia Islaz"
+  },
+  {
+   "u": "54",
+   "v": "55",
+   "length": 94.4,
+   "lanes": 1,
+   "speed_kmh": 50.0,
+   "highway": "tertiary",
+   "name": "Strada C\u00e2mpia Islaz"
+  },
+  {
+   "u": "54",
+   "v": "28",
+   "length": 321.6,
+   "lanes": 2,
+   "speed_kmh": 50.0,
+   "highway": "tertiary",
+   "name": "Strada Gheorghe Bibescu"
+  },
+  {
+   "u": "55",
+   "v": "56",
+   "length": 153.5,
+   "lanes": 1,
+   "speed_kmh": 50.0,
+   "highway": "tertiary",
+   "name": "Strada Bucov\u0103\u021b"
+  },
+  {
+   "u": "55",
+   "v": "57",
+   "length": 102.9,
+   "lanes": 1,
+   "speed_kmh": 50.0,
+   "highway": "tertiary",
+   "name": "Strada Bucov\u0103\u021b"
+  },
+  {
+   "u": "55",
+   "v": "58",
+   "length": 106.5,
+   "lanes": 1,
+   "speed_kmh": 50.0,
+   "highway": "tertiary",
+   "name": "Strada C\u00e2mpia Islaz"
+  },
+  {
+   "u": "55",
+   "v": "54",
+   "length": 94.4,
+   "lanes": 1,
+   "speed_kmh": 50.0,
+   "highway": "tertiary",
+   "name": "Strada C\u00e2mpia Islaz"
+  },
+  {
+   "u": "56",
+   "v": "55",
+   "length": 153.5,
+   "lanes": 1,
+   "speed_kmh": 50.0,
+   "highway": "tertiary",
+   "name": "Strada Bucov\u0103\u021b"
+  },
+  {
+   "u": "56",
+   "v": "58",
+   "length": 123.0,
+   "lanes": 1,
+   "speed_kmh": 40,
+   "highway": "tertiary",
+   "name": "Strada Madona Dudu"
+  },
+  {
+   "u": "57",
+   "v": "55",
+   "length": 102.9,
+   "lanes": 1,
+   "speed_kmh": 50.0,
+   "highway": "tertiary",
+   "name": "Strada Bucov\u0103\u021b"
+  },
+  {
+   "u": "57",
+   "v": "54",
+   "length": 121.0,
+   "lanes": 2,
+   "speed_kmh": 50.0,
+   "highway": "tertiary",
+   "name": "Strada Gheorghe Bibescu"
+  },
+  {
+   "u": "58",
+   "v": "23",
+   "length": 68.5,
+   "lanes": 1,
+   "speed_kmh": 40,
+   "highway": "tertiary",
+   "name": "Strada Madona Dudu"
+  },
+  {
+   "u": "58",
+   "v": "55",
+   "length": 106.5,
+   "lanes": 1,
+   "speed_kmh": 50.0,
+   "highway": "tertiary",
+   "name": "Strada C\u00e2mpia Islaz"
+  },
+  {
+   "u": "58",
+   "v": "56",
+   "length": 123.0,
+   "lanes": 1,
+   "speed_kmh": 40,
+   "highway": "tertiary",
+   "name": "Strada Madona Dudu"
+  },
+  {
+   "u": "59",
+   "v": "20",
+   "length": 131.2,
+   "lanes": 2,
+   "speed_kmh": 50.0,
+   "highway": "secondary",
+   "name": "Strada Alexandru Ioan Cuza"
+  },
+  {
+   "u": "59",
+   "v": "37",
+   "length": 212.0,
+   "lanes": 2,
+   "speed_kmh": 50.0,
+   "highway": "secondary",
+   "name": "Strada Alexandru Ioan Cuza"
+  },
+  {
+   "u": "60",
+   "v": "20",
+   "length": 108.3,
+   "lanes": 2,
+   "speed_kmh": 50.0,
+   "highway": "secondary",
+   "name": "Strada Alexandru Ioan Cuza"
+  },
+  {
+   "u": "61",
+   "v": "39",
+   "length": 222.3,
+   "lanes": 3,
+   "speed_kmh": 50.0,
+   "highway": "secondary",
+   "name": "Calea Bucure\u0219ti"
+  },
+  {
+   "u": "62",
+   "v": "50",
+   "length": 53.0,
+   "lanes": 1,
+   "speed_kmh": 50.0,
+   "highway": "tertiary",
+   "name": "Strada Madona Dudu"
+  },
+  {
+   "u": "62",
+   "v": "57",
+   "length": 53.5,
+   "lanes": 2,
+   "speed_kmh": 50.0,
+   "highway": "tertiary",
+   "name": "Strada Gheorghe Bibescu"
+  },
+  {
+   "u": "62",
+   "v": "23",
+   "length": 63.1,
+   "lanes": 1,
+   "speed_kmh": 40,
+   "highway": "tertiary",
+   "name": "Strada Madona Dudu"
+  },
+  {
+   "u": "63",
+   "v": "49",
+   "length": 95.3,
+   "lanes": 2,
+   "speed_kmh": 50.0,
+   "highway": "tertiary",
+   "name": "Strada Sf\u00e2ntul Dumitru"
+  },
+  {
+   "u": "63",
+   "v": "46",
+   "length": 89.7,
+   "lanes": 2,
+   "speed_kmh": 50.0,
+   "highway": "tertiary",
+   "name": "Strada Sf\u00e2ntul Dumitru"
+  },
+  {
+   "u": "64",
+   "v": "65",
+   "length": 170.9,
+   "lanes": 1,
+   "speed_kmh": 50.0,
+   "highway": "tertiary",
+   "name": "Strada Iancu Jianu"
+  },
+  {
+   "u": "65",
+   "v": "64",
+   "length": 170.9,
+   "lanes": 1,
+   "speed_kmh": 50.0,
+   "highway": "tertiary",
+   "name": "Strada Iancu Jianu"
+  },
+  {
+   "u": "65",
+   "v": "29",
+   "length": 172.5,
+   "lanes": 2,
+   "speed_kmh": 50.0,
+   "highway": "secondary",
+   "name": "Bulevardul Nicolae Titulescu"
+  },
+  {
+   "u": "65",
+   "v": "32",
+   "length": 124.6,
+   "lanes": 2,
+   "speed_kmh": 50.0,
+   "highway": "tertiary",
+   "name": "Strada Adolf Waidman"
+  },
+  {
+   "u": "66",
+   "v": "29",
+   "length": 55.5,
+   "lanes": 2,
+   "speed_kmh": 50.0,
+   "highway": "secondary",
+   "name": "Bulevardul Nicolae Titulescu"
+  },
+  {
+   "u": "67",
+   "v": "66",
+   "length": 651.5,
+   "lanes": 2,
+   "speed_kmh": 50.0,
+   "highway": "secondary",
+   "name": "Pasajul Nicolae Titulescu"
+  },
+  {
+   "u": "67",
+   "v": "68",
+   "length": 337.5,
+   "lanes": 1,
+   "speed_kmh": 50.0,
+   "highway": "secondary",
+   "name": "Calea Bucure\u0219ti"
+  },
+  {
+   "u": "68",
+   "v": "14",
+   "length": 92.7,
+   "lanes": 1,
+   "speed_kmh": 40,
+   "highway": "tertiary",
+   "name": ""
+  },
+  {
+   "u": "68",
+   "v": "42",
+   "length": 91.8,
+   "lanes": 2,
+   "speed_kmh": 50.0,
+   "highway": "secondary",
+   "name": "Calea Bucure\u0219ti"
+  },
+  {
+   "u": "69",
+   "v": "39",
+   "length": 219.3,
+   "lanes": 3,
+   "speed_kmh": 50.0,
+   "highway": "secondary",
+   "name": "Calea Bucure\u0219ti"
+  },
+  {
+   "u": "70",
+   "v": "37",
+   "length": 111.7,
+   "lanes": 3,
+   "speed_kmh": 50.0,
+   "highway": "secondary",
+   "name": "Strada Alexandru Ioan Cuza"
+  },
+  {
+   "u": "70",
+   "v": "6",
+   "length": 456.6,
+   "lanes": 2,
+   "speed_kmh": 50.0,
+   "highway": "secondary",
+   "name": "Strada Alexandru Ioan Cuza"
+  },
+  {
+   "u": "71",
+   "v": "21",
+   "length": 87.1,
+   "lanes": 2,
+   "speed_kmh": 50.0,
+   "highway": "tertiary",
+   "name": "Strada Libert\u0103\u021bii"
+  },
+  {
+   "u": "71",
+   "v": "27",
+   "length": 249.0,
+   "lanes": 2,
+   "speed_kmh": 50.0,
+   "highway": "tertiary",
+   "name": "Strada Bibescu"
+  }
+ ]
+}
