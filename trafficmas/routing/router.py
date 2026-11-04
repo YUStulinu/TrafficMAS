@@ -93,7 +93,7 @@ class Router:
         return None
 
     def route_from_origin(self, origin: str, dest: str, now: float, speed_factor: float = 1.0,
-                          delay_weight: float = 1.0, avoid: frozenset[str] = frozenset()):
+                          delay_weight: float = 1.0):
         starts = [(link, now + self.link_cost(link, now, speed_factor, delay_weight))
                   for link in self.net.out_links(origin) if not link.closed]
-        return self.route(starts, dest, speed_factor, delay_weight, avoid)
+        return self.route(starts, dest, speed_factor, delay_weight)

@@ -1,3 +1,1 @@
-from trafficmas.bus.bus import MessageBus
-
-__all__ = ["MessageBus"]
+"""Message bus between agents (part 1)."""

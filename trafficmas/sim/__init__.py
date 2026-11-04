@@ -1,3 +1,1 @@
-from trafficmas.sim.engine import Simulation
-
-__all__ = ["Simulation"]
+"""SimPy simulation engine and traffic demand (part 1)."""

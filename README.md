@@ -29,7 +29,7 @@ Average time a vehicle spends in the network, in seconds (the queue at the gatew
 | grid, saturated | 173.3 | 167.9 | 164.9 | **160.1** | −2.9% (significant) |
 | grid, morning rush hour | 168.5 | 152.3 | 154.9 | **144.4** | −5.2% (significant) |
 | grid, accident + closed street | 144.8 | 126.2 | 131.6 | **115.3** | −8.6% (significant) |
-| Craiova city centre | 322.3 | **166.1** | 211.4 | 167.4 | +0.8% (not significant) |
+| Craiova city centre | 322.8 | **166.1** | 211.4 | 167.4 | +0.8% (not significant) |
 
 ![Average time in the network](docs/main_time_in_system.png)
 
@@ -39,7 +39,7 @@ Average time a vehicle spends in the network, in seconds (the queue at the gatew
 |---|---:|---:|---:|---:|
 | grid, rush hour | 573 | 338 | 23 | **2** |
 | grid, accident | 1043 | 898 | 37 | **0** |
-| Craiova | 12054 | 394 | 2983 | **11** |
+| Craiova | 12059 | 404 | 2979 | **11** |
 
 In Craiova, actuated control is as fast on average as negotiation, but it lets links stay completely full about 35 times longer.
 
@@ -57,14 +57,14 @@ The queues over the morning rush hour show the same picture: negotiation drains 
 
 | | grid: response time (s) | grid: delay vs. free flow (s) | Craiova: response (s) | Craiova: delay (s) |
 |---|---:|---:|---:|---:|
-| negotiation, no priority | 81.7 | 24.4 | 114.9 | 20.3 |
-| negotiation, local pre-emption | 63.3 | 6.2 | 103.5 | 9.2 |
-| **negotiation, reserved corridor** | **62.4** | **5.1** | **103.2** | **8.6** |
-| fixed-time, reserved corridor | 64.1 | 5.1 | 112.9 | 13.8 |
+| negotiation, no priority | 81.7 | 24.4 | 112.5 | 18.2 |
+| negotiation, local pre-emption | 63.2 | 6.1 | 103.3 | 9.3 |
+| **negotiation, reserved corridor** | **62.4** | **5.2** | **103.2** | **8.9** |
+| fixed-time, reserved corridor | 63.9 | 4.9 | 112.5 | 13.6 |
 
-With a corridor, an ambulance loses 79% less time on the grid than without priority, and 58% less in Craiova. The corridor is slightly better than local pre-emption, but the difference between the two is not significant.
+With a corridor, an ambulance loses 79% less time on the grid than without priority, and 51% less in Craiova. The corridor is slightly better than local pre-emption, but the difference between the two is not significant.
 
-The clearer effect is on the **other vehicles**. Each run with ambulances is paired with the same run without them. Under fixed-time control, every ambulance with priority costs the rest of the traffic 5100–6200 vehicle-seconds on the grid. Under negotiation it costs 550–790, about 8× less, because the agents empty the queues that the ambulance left behind instead of going back to a fixed cycle. In Craiova this cost is too small to measure: all confidence intervals include zero.
+The clearer effect is on the **other vehicles**. Each run with ambulances is paired with the same run without them. Under fixed-time control, every ambulance with priority costs the rest of the traffic 5200–6200 vehicle-seconds on the grid. Under negotiation it costs 550–710, about 9× less, because the agents empty the queues that the ambulance left behind instead of going back to a fixed cycle. In Craiova this cost is too small to measure: all confidence intervals include zero.
 
 In the conflict scenario, two ambulances reach junction n1_2 at the same moment. The one with the higher priority keeps its slot; the other is refused and re-plans its route.
 
@@ -78,8 +78,8 @@ In the conflict scenario, two ambulances reach junction n1_2 at the same moment.
 | zone coordinator | 160.1 | 144.4 | 115.4 | 167.4 |
 | Contract Net bids | 160.3 | 144.3 | 115.2 | 167.4 |
 | credits | 160.1 | 144.4 | 115.3 | 167.4 |
-| platoon messages | 160.3 | 144.5 | 115.8 | 167.5 |
-| **commitment to the current phase** | **437.7** | **289.0** | **140.5** | **177.7** |
+| platoon messages | 160.3 | 144.5 | 115.8 | 167.4 |
+| **commitment to the current phase** | **437.7** | **289.0** | **140.5** | **178.1** |
 
 The result is unambiguous: **almost all of the gain comes from the BDI commitment** together with the pressure scoring. Without the commitment, the agents reconsider their phase every few seconds and lose a 4 s intergreen each time. Under saturation the grid then collapses into spillback.
 
@@ -91,7 +91,7 @@ So in these scenarios the negotiation layer is a safety net that is almost never
 
 ### 4. Unreliable communication
 
-Even 3 s of message latency or 50% of messages lost cost negotiation at most 0.8% on the rush hour (144.4 → 145.6 s). It still stays well ahead of max-pressure, which needs no messages at all (154.9 s). In Craiova the ambulance arrives 4 s later when half the messages are lost (103.2 → 107.2 s). The agents degrade gracefully because every one of them can always fall back on its local pressure.
+Even 3 s of message latency or 50% of messages lost cost negotiation at most 0.8% on the rush hour (144.4 → 145.6 s). It still stays well ahead of max-pressure, which needs no messages at all (154.9 s). In Craiova the ambulance arrives 3 s later when half the messages are lost (103.2 → 106.0 s). The agents degrade gracefully because every one of them can always fall back on its local pressure.
 
 ![Robustness](docs/robustness_time_in_system.png)
 
@@ -248,7 +248,7 @@ There are three driver profiles: conservative, normal and aggressive. A driver f
 ## Tests
 
 ```bash
-.venv/Scripts/python -m pytest -q        # 46 tests, about 10 s
+.venv/Scripts/python -m pytest -q        # 64 tests, about 20 s
 .venv/Scripts/ruff check trafficmas tests scripts
 ```
 
@@ -259,8 +259,11 @@ The tests cover:
 - every controller, the commitment and starvation guard, and a full Contract Net round with payment;
 - the credit cap on a selfish bidder, and corridor conflicts settled by priority;
 - end-to-end runs of every controller, determinism per seed, ambulances in every mode, closures, and the OSM and Braess scenarios.
+- scenarios that name unknown links or nodes fail at start with a clear error.
 
 CI (GitHub Actions) runs the tests and the linter on Linux and Windows, plus a short experiment and a headless recording of the live view.
+
+Beyond the unit tests, the simulator was checked with 250 random configurations: every controller, network and ambulance mode, grid sizes, message latency and loss. During those runs it was checked continuously that no vehicle is served on red (ambulances excepted), no link holds more vehicles than it has room for, no approach discharges faster than its saturation flow, and every vehicle is in exactly one place and is never lost.
 
 ## Project layout
 

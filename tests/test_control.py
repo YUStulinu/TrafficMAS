@@ -53,9 +53,11 @@ def test_discharge_at_saturation_flow():
     agent = sim.agents["n0_0"]
     m = movement(agent)
     fill(m, 10)
+    first = m.queue[0]
     for t in range(5):
         agent.discharge(float(t), 1.0)
     assert len(m.queue) == 10 - 5 * int(min(m.sat_rate, m.inbound.sat_cap))
+    assert first.crossed_to is m.outbound
 
 
 def test_full_downstream_link_blocks_discharge():

@@ -111,6 +111,8 @@ class Simulation:
         self.emergency_mode = self.cfg["emergency"].get("mode", "corridor")
         self._schedule_emergencies(random.Random(seed * 7919 + 3))
         for inc in self.cfg["incidents"]:
+            if inc["link"] not in self.net.links:
+                raise ValueError(f"incident on unknown link {inc['link']!r} in scenario {self.name!r}")
             self.env.process(self._incident(inc))
         self.env.process(self.metrics.sampler(self.env))
         self.horizon = self.duration + float(self.cfg["drain"])
@@ -148,10 +150,19 @@ class Simulation:
             gws = [g.id for g in self.net.gateways]
             t = float(rnd.get("start", 300))
             for _ in range(int(rnd.get("count", 3))):
-                o, d = rng.sample(gws, 2)
+                for _ in range(100):   # one-way networks: only some gateway pairs are connected
+                    o, d = rng.sample(gws, 2)
+                    if self.router.route_from_origin(o, d, 0.0) is not None:
+                        break
+                else:
+                    raise ValueError(f"no connected gateway pair for ambulances in scenario {self.name!r}")
                 evs.append({"depart": t, "origin": o, "dest": d, "priority": rng.choice([1, 2])})
                 t += float(rnd.get("interval", 600))
         for i, e in enumerate(evs):
+            for key in ("origin", "dest"):
+                if e[key] not in self.net.nodes:
+                    raise ValueError(f"ambulance {key} {e[key]!r} is not a node of scenario {self.name!r}")
+
             def go(env, e=e, i=i):
                 yield env.timeout(float(e["depart"]))
                 self.spawn_emergency(f"ev{i + 1}", e["origin"], e["dest"], int(e.get("priority", 1)))

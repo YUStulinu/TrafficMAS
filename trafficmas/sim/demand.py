@@ -49,6 +49,9 @@ class DemandGenerator:
         pairs: list[tuple[str, str, float]] = []
         if od_pairs:
             pairs = [(str(o), str(d), float(w)) for o, d, w in od_pairs]
+            unknown = {n for o, d, _ in pairs for n in (o, d)} - set(sim.net.nodes)
+            if unknown:
+                raise ValueError(f"od_pairs name unknown nodes: {sorted(unknown)}")
         else:
             gws = sim.net.gateways
             for o in gws:

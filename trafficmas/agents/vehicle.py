@@ -83,10 +83,10 @@ class Vehicle:
             t += router.link_cost(link, t, self.speed_factor, self.delay_weight)
         return t - now
 
-    def replan(self, now: float, force: bool = False, avoid: frozenset[str] = frozenset()) -> bool:
+    def replan(self, now: float, force: bool = False) -> bool:
         """Re-plan from the current link. Returns True if the route changed."""
         res = self.sim.router.route([(self.link, self.stopline_at)], self.dest, self.speed_factor,
-                                    self.delay_weight, avoid)
+                                    self.delay_weight)
         if res is None:
             return False
         path, arrival = res
@@ -101,14 +101,15 @@ class Vehicle:
     # ------------------------------------------------------------------ lifecycle
     def run(self, env):
         if not self.plan(env.now):
-            return   # no route to the destination: the engine drops the vehicle
-        self.free_flow = sum(self.link_time(link) for link in self.route)
+            self.sim.metrics.unroutable += 1
+            return
         t0 = env.now
         while not self.can_enter(self.route[0]):
             yield env.timeout(1.0)
             if self.route[0].closed or (self.compliant and int(env.now - t0) % 10 == 0):
                 self.plan(env.now)
         self.wait += env.now - t0
+        self.free_flow = sum(self.link_time(link) for link in self.route)
         self.entered_network = env.now
         self.enter(self.route[0], env.now, first=True)
         while True:

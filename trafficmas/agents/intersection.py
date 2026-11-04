@@ -168,9 +168,6 @@ class IntersectionAgent:
 
     def _serve(self, m: Movement, now: float, dt: float) -> None:
         q = m.queue
-        if not q:
-            m.credit = 0.0
-            return
         rate = m.sat_rate * m.inbound.capacity_factor
         m.credit = min(m.credit + rate * dt, max(1.0, rate * dt))
         link = m.inbound
@@ -236,11 +233,7 @@ class IntersectionAgent:
 
     def handle_corridor_request(self, msg: Message) -> None:
         p = msg.payload
-        phase = self.node.phase_of.get((p["in_link"], p["out_link"]))
-        if phase is None or not self.signalized:
-            self.send(msg.sender, "REJECT", TOPIC_CORRIDOR, {"node": self.id, "reason": "not signalised"},
-                      msg.conversation)
-            return
+        phase = self.node.phase_of[(p["in_link"], p["out_link"])]   # requests only name real movements
         new = Reservation(msg.sender, p["in_link"], p["out_link"], phase, p["eta"], p["priority"])
         conflicts = [r for r in self.reservations.values()
                      if r.ev_id != new.ev_id and r.phase != phase and self._overlaps(r, new)]

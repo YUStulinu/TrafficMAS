@@ -19,7 +19,7 @@ class MessageBus:
     """
 
     def __init__(self, env: simpy.Environment, rng: random.Random, latency: float = 0.1,
-                 jitter: float = 0.0, loss: float = 0.0, keep_log: bool = False) -> None:
+                 jitter: float = 0.0, loss: float = 0.0) -> None:
         self.env = env
         self.rng = rng
         self.latency = latency
@@ -31,7 +31,6 @@ class MessageBus:
         self.sent = 0
         self.dropped = 0
         self.by_topic: Counter[str] = Counter()
-        self.log: list[Message] | None = [] if keep_log else None
 
     def register(self, agent, zone: str | None = None) -> None:
         self.agents[agent.id] = agent
@@ -43,8 +42,6 @@ class MessageBus:
 
     def send(self, msg: Message) -> None:
         msg.sent_at = self.env.now
-        if self.log is not None:
-            self.log.append(msg)
         if msg.receiver == BROADCAST_VEHICLES:
             self._count(msg)
             targets = list(self.vehicle_subscribers.values())

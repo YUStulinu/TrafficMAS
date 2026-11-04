@@ -40,12 +40,12 @@ class EmergencyVehicle(Vehicle):
 
     def __init__(self, sim: Simulation, vid: str, origin: str, dest: str, priority: int, mode: str, rng) -> None:
         super().__init__(sim, vid, origin, dest, "aggressive", rng)
+        self.compliant = True   # always plans with the congestion information (see enter below)
         self.priority = priority
         self.mode = mode
         self.reserved: dict[str, float] = {}   # node id -> eta of the accepted reservation
         self.requested: set[str] = set()
         self.rejections = 0
-        self.replans = 0
         sim.bus.register(self)
 
     def link_time(self, link: Link) -> float:
@@ -122,7 +122,6 @@ class EmergencyVehicle(Vehicle):
             return
         old_nodes = {link.v for link in self.route[self.idx:]}
         self.route = self.route[:self.idx] + path
-        self.replans += 1
         new_nodes = {link.v for link in self.route[self.idx:]}
         for node in old_nodes - new_nodes:
             if node in self.reserved or node in self.requested:

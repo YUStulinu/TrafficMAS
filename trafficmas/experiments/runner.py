@@ -55,13 +55,12 @@ def run_job(job: dict) -> dict:
     return row
 
 
-def run_experiment(path: str | Path, workers: int | None = None, seeds: int | None = None,
-                   out_dir: str | Path | None = None) -> Path:
+def run_experiment(path: str | Path, workers: int | None = None, seeds: int | None = None) -> Path:
     cfg = load_yaml(path)
     if seeds is not None:
         cfg["seeds"] = seeds
     jobs = expand(cfg)
-    out = Path(out_dir) if out_dir else ROOT / "results" / cfg["name"]
+    out = ROOT / "results" / cfg["name"]
     out.mkdir(parents=True, exist_ok=True)
     (out / "experiment.yaml").write_text(yaml.safe_dump(cfg, sort_keys=False), encoding="utf-8")
     workers = workers or max(1, (os.cpu_count() or 2) - 1)

@@ -36,12 +36,12 @@ class MetricsCollector:
         self.ev_trips: list[dict] = []
         self.active: dict[str, Vehicle] = {}
         self.spawned = 0
+        self.unroutable = 0
         self.blocked_events = 0
         self.corridor_served = 0
         self.corridor_conflicts = 0
         self.approach_wait: dict[str, list[float]] = {}
         self.samples: list[dict] = []
-        self.link_queue_sum: dict[str, float] = {}
         self.spill_link_samples = 0
         self.co2_g = 0.0
 
@@ -52,13 +52,11 @@ class MetricsCollector:
 
     def vehicle_done(self, v: Vehicle, now: float) -> None:
         self.active.pop(v.id, None)
-        rec = {"id": v.id, "origin": v.origin, "dest": v.dest, "depart": v.depart, "arrive": now,
-               "travel_time": now - v.depart, "wait_time": v.wait, "stops": v.stops,
-               "distance": v.distance, "free_flow": v.free_flow, "delay": now - v.depart - v.free_flow,
-               "reroutes": v.reroutes, "profile": v.profile}
+        rec = {"travel_time": now - v.depart, "wait_time": v.wait, "stops": v.stops,
+               "delay": now - v.depart - v.free_flow, "reroutes": v.reroutes}
         self.co2_g += co2_grams(v.distance, v.wait, v.stops)
         if v.is_emergency:
-            rec.update(priority=v.priority, rejections=v.rejections, replans=v.replans)
+            rec["rejections"] = v.rejections
             self.ev_trips.append(rec)
         else:
             self.trips.append(rec)
@@ -80,14 +78,12 @@ class MetricsCollector:
                 q = link.queued
                 queued += q
                 max_q = max(max_q, q)
-                self.link_queue_sum[link.id] = self.link_queue_sum.get(link.id, 0.0) + q
             for link in net.links.values():
                 if link.queues and link.occupancy >= 0.95 * link.storage:
                     spill += 1
             self.spill_link_samples += spill
             self.samples.append({"t": env.now, "queued": queued, "mean_queue": queued / max(1, len(approaches)),
-                                 "max_queue": max_q, "in_network": len(self.active), "spill_links": spill,
-                                 "completed": len(self.trips)})
+                                 "max_queue": max_q})
             yield env.timeout(self.sample_interval)
 
     # ------------------------------------------------------------------ results
@@ -100,7 +96,6 @@ class MetricsCollector:
         in_system = tt + [end - v.depart for v in unfinished]
         co2 = self.co2_g + sum(co2_grams(v.distance, v.wait, v.stops) for v in self.active.values())
         waits = [s / n for s, n in self.approach_wait.values() if n >= 5]
-        n_samples = max(1, len(self.samples))
         n_agents = len(sim.agents) + len(sim.coordinators)
         minutes = max(1.0, end / 60.0)
         evs = self.ev_trips
@@ -111,6 +106,7 @@ class MetricsCollector:
 
         out = {
             "spawned": self.spawned,
+            "unroutable": self.unroutable,
             "completed": len(trips),
             "unfinished": len(unfinished),
             "completion_rate": len(trips) / max(1, len(trips) + len(unfinished)),
@@ -141,7 +137,6 @@ class MetricsCollector:
             "corridor_served": self.corridor_served,
             "corridor_conflicts": self.corridor_conflicts,
             "sim_time": end,
-            "n_samples": n_samples,
         }
         for topic, n in sorted(sim.bus.by_topic.items()):
             out[f"msg_{topic}"] = n

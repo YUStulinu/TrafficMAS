@@ -59,9 +59,6 @@ class Link:
     def has_space(self) -> bool:
         return not self.closed and self.occupancy < self.storage
 
-    def __repr__(self) -> str:
-        return f"Link({self.id}, occ={self.occupancy}/{self.storage})"
-
 
 @dataclass(eq=False)
 class Movement:
@@ -78,9 +75,6 @@ class Movement:
     @property
     def queue(self) -> deque:
         return self.inbound.queues[self.outbound.id]
-
-    def __repr__(self) -> str:
-        return f"Movement({self.inbound.id} => {self.outbound.id}, {self.turn})"
 
 
 @dataclass(eq=False)

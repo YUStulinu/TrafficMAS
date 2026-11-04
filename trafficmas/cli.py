@@ -11,7 +11,6 @@ from __future__ import annotations
 import argparse
 import json
 import statistics
-import sys
 
 import yaml
 
@@ -26,10 +25,6 @@ SHOWN = [("completed", "completed", "{:.0f}"), ("unfinished", "unfinished", "{:.
          ("ev_response_time", "ambulance (s)", "{:.1f}"), ("messages_per_agent_min", "msgs/agent/min", "{:.1f}")]
 
 
-def parse_value(text: str):
-    return yaml.safe_load(text)
-
-
 def parse_assignments(items: list[str] | None) -> dict:
     """key=value pairs; dotted keys build nested dicts (bus.latency=0.5)."""
     out: dict = {}
@@ -39,7 +34,7 @@ def parse_assignments(items: list[str] | None) -> dict:
         parts = key.split(".")
         for p in parts[:-1]:
             node = node.setdefault(p, {})
-        node[parts[-1]] = parse_value(value)
+        node[parts[-1]] = yaml.safe_load(value)
     return out
 
 
@@ -144,7 +139,3 @@ def main(argv: list[str] | None = None) -> None:
 
     args = ap.parse_args(argv)
     args.func(args)
-
-
-if __name__ == "__main__":
-    main(sys.argv[1:])

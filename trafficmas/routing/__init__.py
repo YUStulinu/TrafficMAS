@@ -1,3 +1,1 @@
-from trafficmas.routing.router import Router, TrafficInfoBoard
-
-__all__ = ["Router", "TrafficInfoBoard"]
+"""Time-dependent A* routing and the congestion information board (part 3)."""

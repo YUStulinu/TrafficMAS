@@ -154,6 +154,6 @@ def analyze(result_dir: str | Path, docs_dir: str | Path | None = None) -> Path:
         data = {lab: [mean_ci(values(s, lab, m)) for s in scenarios] for lab in labels}
         out = Path(docs_dir) / fig["file"] if docs_dir else result_dir / fig["file"]
         grouped_bars(scenarios, data, METRICS.get(m, (m,))[0], fig.get("title", ""), out,
-                     highlight=ref, log=fig.get("log", False))
+                     highlight=ref)
     print(f"wrote {result_dir / 'summary.md'}")
     return result_dir / "summary.md"

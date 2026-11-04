@@ -100,3 +100,20 @@ def test_rush_hour_profile():
     pts = RATE_PROFILES["rush_hour"]
     assert profile_value(pts, 1800) == pytest.approx(1.35)
     assert profile_value(pts, 450) == pytest.approx(0.8)
+
+
+@pytest.mark.parametrize("override, message", [
+    ({"incidents": [{"link": "x->y", "start": 0}]}, "unknown link"),
+    ({"emergency": {"vehicles": [{"depart": 10, "origin": "nowhere", "dest": "E0"}]}}, "not a node"),
+    ({"demand": {"od_pairs": [["A", "Z", 1.0]]}}, "unknown nodes"),
+])
+def test_bad_scenarios_fail_at_start(override, message):
+    with pytest.raises(ValueError, match=message):
+        Simulation(scenario(**override), "fixed", seed=1)
+
+
+def test_random_ambulances_only_between_connected_gateways():
+    sc = load_scenario("scenarios/braess.yaml")   # one-way network: only S -> E is possible
+    ov = {"demand": {"duration": 300}, "emergency": {"random": {"count": 3, "start": 30, "interval": 30}}}
+    s = Simulation(sc, "fixed", seed=4, overrides=ov, base_dir=ROOT).run()
+    assert s["ev_count"] == 3 and s["unroutable"] == 0

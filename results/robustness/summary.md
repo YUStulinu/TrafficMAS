@@ -30,20 +30,20 @@ Tests against **ideal**: Mann-Whitney U, two-sided, Holm-corrected per metric; K
 
 | variant | Avg. time in system (s) | Avg. waiting time (s) | Spillback (link-seconds) | Ambulance response time (s) | Messages per agent per minute |
 |---|---:|---:|---:|---:|---:|
-| **ideal** | 167.4 ± 1.1 | 42.9 ± 0.8 | 11.0 ± 15.2 | 103.2 ± 14.2 | 6.25 ± 0.01 |
-| latency_1s | 167.5 ± 1.2 | 42.9 ± 0.9 | 24.0 ± 34.4 | 104.2 ± 14.5 | 6.25 ± 0.01 |
-| latency_3s | 167.4 ± 1.1 | 42.9 ± 0.9 | 23.0 ± 35.5 | 102.9 ± 13.4 | 6.25 ± 0.01 |
-| loss_10pct | 167.7 ± 0.9 | 43.2 ± 0.6 | 17.0 ± 24.1 | 105.3 ± 13.9 | 6.25 ± 0.01 |
-| loss_30pct | 167.7 ± 1.1 | 43.2 ± 0.8 | 39.0 ± 51.7 | 105.1 ± 14.9 | 6.25 ± 0.01 |
-| loss_50pct | 167.8 ± 1.0 | 43.2 ± 0.7 | 26.0 ± 32.9 | 107.2 ± 14.2 | 6.24 ± 0.01 |
-| max_pressure | 211.4 ± 5.5 | 86.4 ± 5.5 | 2983 ± 1034 | 110.0 ± 14.6 | 5.90 ± 0.00 |
+| **ideal** | 167.4 ± 1.0 | 42.9 ± 0.8 | 11.0 ± 15.2 | 103.2 ± 14.3 | 6.25 ± 0.01 |
+| latency_1s | 167.4 ± 1.2 | 42.9 ± 0.9 | 23.0 ± 34.7 | 103.6 ± 14.5 | 6.25 ± 0.01 |
+| latency_3s | 167.3 ± 1.2 | 42.8 ± 0.9 | 23.0 ± 35.5 | 102.4 ± 13.4 | 6.25 ± 0.01 |
+| loss_10pct | 167.6 ± 0.9 | 43.1 ± 0.6 | 19.0 ± 23.7 | 105.0 ± 13.5 | 6.25 ± 0.01 |
+| loss_30pct | 167.7 ± 1.1 | 43.2 ± 0.8 | 33.0 ± 52.7 | 104.0 ± 15.0 | 6.24 ± 0.01 |
+| loss_50pct | 167.8 ± 0.9 | 43.2 ± 0.7 | 21.0 ± 32.8 | 106.0 ± 14.3 | 6.24 ± 0.01 |
+| max_pressure | 211.4 ± 5.5 | 86.4 ± 5.4 | 2979 ± 1029 | 109.7 ± 14.5 | 5.90 ± 0.00 |
 
 Tests against **ideal**: Mann-Whitney U, two-sided, Holm-corrected per metric; Kruskal-Wallis across all variants.
 
 | metric | Kruskal-Wallis p | vs latency_1s | vs latency_3s | vs loss_10pct | vs loss_30pct | vs loss_50pct | vs max_pressure |
 |---|---:|---:|---:|---:|---:|---:|---:|
-| Avg. time in system (s) | 0.000226 | 1 | 1 | 1 | 1 | 1 | 0.0011 |
-| Avg. waiting time (s) | 0.000254 | 1 | 1 | 1 | 1 | 1 | 0.0011 |
-| Spillback (link-seconds) | 1.94e-05 | 1 | 1 | 1 | 1 | 1 | 0.00079 |
-| Ambulance response time (s) | 0.867 | 1 | 1 | 1 | 1 | 1 | 1 |
-| Messages per agent per minute | 8.02e-05 | 1 | 1 | 1 | 1 | 1 | 0.0011 |
+| Avg. time in system (s) | 0.000208 | 1 | 1 | 1 | 1 | 1 | 0.0011 |
+| Avg. waiting time (s) | 0.000235 | 1 | 1 | 1 | 1 | 1 | 0.0011 |
+| Spillback (link-seconds) | 1.19e-05 | 1 | 1 | 1 | 1 | 1 | 0.00079 |
+| Ambulance response time (s) | 0.827 | 1 | 1 | 1 | 1 | 1 | 1 |
+| Messages per agent per minute | 9.14e-05 | 1 | 1 | 1 | 0.929 | 1 | 0.0011 |

@@ -29,7 +29,7 @@ def _style(ax) -> None:
 
 
 def grouped_bars(groups: list[str], data: dict[str, list[tuple[float, float]]], ylabel: str, title: str,
-                 out: Path, highlight: str | None = None, log: bool = False) -> None:
+                 out: Path, highlight: str | None = None) -> None:
     """Small multiples: one panel per group (scenario) with its own y axis, one bar per series.
 
     Whiskers are 95% confidence intervals. Scenarios differ by an order of magnitude,
@@ -51,10 +51,7 @@ def grouped_bars(groups: list[str], data: dict[str, list[tuple[float, float]]], 
                    yerr=c, error_kw={"ecolor": TEXT_2, "elinewidth": 0.9, "capsize": 2})
         ax.set_xticks([])
         ax.set_xlabel(groups[g], color=TEXT, fontsize=9)
-        if log:
-            ax.set_yscale("log")
-        lo, hi = ax.get_ylim()
-        ax.set_ylim(0 if not log else lo, hi * 1.05)
+        ax.set_ylim(0, ax.get_ylim()[1] * 1.05)
     axes[0][0].set_ylabel(ylabel, color=TEXT_2, fontsize=9)
     if title:
         fig.suptitle(title, color=TEXT, fontsize=11, x=0.01, ha="left")

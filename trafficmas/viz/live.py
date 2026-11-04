@@ -45,7 +45,7 @@ def occupancy_colour(r: float) -> tuple[int, int, int]:
 class LiveView:
     def __init__(self, sim: Simulation, width: int = 1280, height: int = 820, speed: float = 8.0,
                  fps: int = 30, record: str | None = None, record_seconds: float = 120.0,
-                 record_every: float = 1.0, headless: bool = False, start_at: float = 0.0) -> None:
+                 headless: bool = False, start_at: float = 0.0) -> None:
         if headless:
             os.environ.setdefault("SDL_VIDEODRIVER", "dummy")
         import pygame
@@ -60,7 +60,6 @@ class LiveView:
         self.labels = False
         self.record = record
         self.record_seconds = record_seconds
-        self.record_every = record_every
         self.frames: list = []
         self.start_at = start_at
         self.screen = pygame.display.set_mode((width, height))
@@ -223,7 +222,6 @@ class LiveView:
             sim.env.run(until=self.start_at)
         watcher = sim.env.process(sim._watch(sim.env))
         record_start = sim.env.now
-        next_frame = sim.env.now
         running = True
         while running and not watcher.triggered:
             for ev in pg.event.get():
@@ -238,15 +236,13 @@ class LiveView:
                         self.speed = max(0.5, self.speed / 1.5)
                     elif ev.key == pg.K_l:
                         self.labels = not self.labels
-            if not self.paused:
-                step = self.record_every if self.record else self.speed / self.fps
-                sim.env.run(until=sim.env.now + step)
+            if not self.paused:   # a recording advances one simulated second per frame
+                sim.env.run(until=sim.env.now + (1.0 if self.record else self.speed / self.fps))
             self.draw()
             pg.display.flip()
             if self.record:
-                if sim.env.now >= next_frame:
+                if not self.paused:
                     self._capture()
-                    next_frame += self.record_every
                 if sim.env.now - record_start >= self.record_seconds:
                     break
             else:
