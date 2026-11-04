@@ -69,8 +69,6 @@ class IntersectionAgent:
         self.drain: dict[str, float] = {}   # link id -> until (coordinator directive)
         self.meter: dict[str, float] = {}   # out link id -> until (coordinator directive)
         self.released: dict[str, int] = {}  # out link id -> vehicles released during this green
-        if controller is not None:
-            controller.attach(self)
 
     # ------------------------------------------------------------------ state
     @property

@@ -31,21 +31,21 @@ Tests against **negotiation_coord/corridor**: Mann-Whitney U, two-sided, Holm-co
 
 | variant | Ambulance response time (s) | Ambulance delay vs. free flow (s) | Extra delay of other traffic per ambulance (veh-s) | ev_rejections | corridor_conflicts | Avg. time in system (s) | Messages per agent per minute |
 |---|---:|---:|---:|---:|---:|---:|---:|
-| fixed/none | 122.6 ± 16.8 | 23.6 ± 4.3 | 111.1 ± 347.2 | 0.00 ± 0.00 | 0.00 ± 0.00 | 327.9 ± 10.4 | 5.88 ± 0.00 |
-| fixed/preemption | 113.8 ± 14.4 | 14.8 ± 2.5 | -3249 ± 3885 | 0.00 ± 0.00 | 0.00 ± 0.00 | 325.4 ± 10.9 | 5.88 ± 0.00 |
-| fixed/corridor | 112.5 ± 14.8 | 13.6 ± 2.6 | -6818 ± 4858 | 0.00 ± 0.00 | 0.00 ± 0.00 | 322.8 ± 11.1 | 5.90 ± 0.00 |
-| negotiation_coord/none | 112.5 ± 15.9 | 18.2 ± 4.1 | 21.7 ± 667.1 | 0.00 ± 0.00 | 0.00 ± 0.00 | 167.4 ± 1.1 | 6.23 ± 0.00 |
-| negotiation_coord/preemption | 103.3 ± 14.3 | 9.34 ± 1.83 | -285.3 ± 664.4 | 0.00 ± 0.00 | 0.00 ± 0.00 | 167.2 ± 1.1 | 6.23 ± 0.01 |
-| **negotiation_coord/corridor** | 103.2 ± 14.3 | 8.89 ± 1.84 | 63.8 ± 690.1 | 0.00 ± 0.00 | 0.00 ± 0.00 | 167.4 ± 1.0 | 6.25 ± 0.01 |
+| fixed/none | 122.7 ± 16.9 | 23.6 ± 4.3 | 38.4 ± 239.3 | 0.00 ± 0.00 | 0.00 ± 0.00 | 327.9 ± 10.4 | 5.88 ± 0.00 |
+| fixed/preemption | 113.9 ± 14.5 | 14.9 ± 2.6 | -3338 ± 3819 | 0.00 ± 0.00 | 0.00 ± 0.00 | 325.4 ± 10.9 | 5.88 ± 0.00 |
+| fixed/corridor | 112.2 ± 14.7 | 13.2 ± 2.7 | -6940 ± 4892 | 0.00 ± 0.00 | 0.00 ± 0.00 | 322.8 ± 11.1 | 5.90 ± 0.00 |
+| negotiation_coord/none | 112.4 ± 15.8 | 18.3 ± 3.6 | 172.1 ± 577.5 | 0.00 ± 0.00 | 0.00 ± 0.00 | 167.3 ± 1.3 | 6.23 ± 0.00 |
+| negotiation_coord/preemption | 103.1 ± 14.2 | 8.96 ± 2.33 | 683.7 ± 574.2 | 0.00 ± 0.00 | 0.00 ± 0.00 | 167.7 ± 0.9 | 6.23 ± 0.01 |
+| **negotiation_coord/corridor** | 103.5 ± 15.0 | 9.45 ± 2.84 | 511.3 ± 549.9 | 0.00 ± 0.00 | 0.00 ± 0.00 | 167.6 ± 1.0 | 6.25 ± 0.01 |
 
 Tests against **negotiation_coord/corridor**: Mann-Whitney U, two-sided, Holm-corrected per metric; Kruskal-Wallis across all variants.
 
 | metric | Kruskal-Wallis p | vs fixed/none | vs fixed/preemption | vs fixed/corridor | vs negotiation_coord/none | vs negotiation_coord/preemption |
 |---|---:|---:|---:|---:|---:|---:|
-| Ambulance response time (s) | 0.255 | 0.445 | 0.744 | 0.744 | 0.744 | 0.97 |
-| Ambulance delay vs. free flow (s) | 2.43e-07 | 0.000913 | 0.00175 | 0.0116 | 0.000985 | 0.91 |
-| Extra delay of other traffic per ambulance (veh-s) | 0.0124 | 1 | 0.562 | 0.0455 | 1 | 0.922 |
+| Ambulance response time (s) | 0.269 | 0.521 | 0.744 | 0.744 | 0.744 | 0.91 |
+| Ambulance delay vs. free flow (s) | 1.69e-06 | 0.0022 | 0.0219 | 0.151 | 0.00682 | 0.791 |
+| Extra delay of other traffic per ambulance (veh-s) | 0.00137 | 0.216 | 0.312 | 0.0181 | 0.324 | 0.791 |
 | ev_rejections | nan | 1 | 1 | 1 | 1 | 1 |
 | corridor_conflicts | nan | 1 | 1 | 1 | 1 | 1 |
-| Avg. time in system (s) | 1.76e-08 | 0.000913 | 0.000913 | 0.000913 | 1 | 1 |
-| Messages per agent per minute | 2.02e-10 | 0.000659 | 0.000659 | 0.000659 | 0.00066 | 0.000769 |
+| Avg. time in system (s) | 1.67e-08 | 0.000913 | 0.000913 | 0.000913 | 1 | 1 |
+| Messages per agent per minute | 1.73e-10 | 0.000659 | 0.000659 | 0.000659 | 0.000659 | 0.000659 |

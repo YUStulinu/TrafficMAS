@@ -6,6 +6,8 @@ import itertools
 import random
 from typing import TYPE_CHECKING
 
+from trafficmas.agents.vehicle import PROFILES
+
 if TYPE_CHECKING:
     from trafficmas.sim.engine import Simulation
 
@@ -46,6 +48,9 @@ class DemandGenerator:
         self.points = RATE_PROFILES[profile] if isinstance(profile, str) else [tuple(p) for p in profile]
         self.peak = max(v for _, v in self.points)
         self.driver_profiles = profiles or {"conservative": 0.3, "normal": 0.5, "aggressive": 0.2}
+        unknown_profiles = set(self.driver_profiles) - set(PROFILES)
+        if unknown_profiles:
+            raise ValueError(f"unknown driver profiles {sorted(unknown_profiles)}; known: {sorted(PROFILES)}")
         pairs: list[tuple[str, str, float]] = []
         if od_pairs:
             pairs = [(str(o), str(d), float(w)) for o, d, w in od_pairs]
@@ -63,6 +68,8 @@ class DemandGenerator:
                         if o.side == b["from"] and d.side == b["to"]:
                             w *= float(b["factor"])
                     pairs.append((o.id, d.id, w))
+        if not pairs or sum(w for _, _, w in pairs) <= 0:
+            raise ValueError("the origin-destination matrix is empty")
         self.pairs = pairs
         self.cum = list(itertools.accumulate(w for _, _, w in pairs))
         names = list(self.driver_profiles)

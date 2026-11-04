@@ -12,7 +12,6 @@ if TYPE_CHECKING:
 class FixedTimeController(BaseController):
     """Pre-timed plan: every phase gets the same green, in a fixed cycle."""
 
-    name = "fixed"
 
     def __init__(self, green: float = 30.0) -> None:
         self.green = green
@@ -31,7 +30,6 @@ class ActuatedController(BaseController):
     `max_green`. Phases without demand are skipped.
     """
 
-    name = "actuated"
 
     def __init__(self, min_green: float = 8.0, max_green: float = 30.0, gap: float = 3.0) -> None:
         self.min_green = min_green
@@ -68,7 +66,6 @@ class MaxPressureController(BaseController):
     fully decentralised and needs no communication; it is the strongest baseline.
     """
 
-    name = "max_pressure"
 
     def __init__(self, min_green: float = 20.0) -> None:
         self.min_green = min_green

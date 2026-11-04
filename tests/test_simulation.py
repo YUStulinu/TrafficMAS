@@ -106,6 +106,8 @@ def test_rush_hour_profile():
     ({"incidents": [{"link": "x->y", "start": 0}]}, "unknown link"),
     ({"emergency": {"vehicles": [{"depart": 10, "origin": "nowhere", "dest": "E0"}]}}, "not a node"),
     ({"demand": {"od_pairs": [["A", "Z", 1.0]]}}, "unknown nodes"),
+    ({"demand": {"driver_profiles": {"reckless": 1.0}}}, "unknown driver profiles"),
+    ({"demand": {"od_pairs": [["W0", "E0", 0.0]]}}, "matrix is empty"),
 ])
 def test_bad_scenarios_fail_at_start(override, message):
     with pytest.raises(ValueError, match=message):

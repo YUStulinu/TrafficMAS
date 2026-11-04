@@ -12,6 +12,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import math
 from pathlib import Path
 
 import networkx as nx
@@ -22,15 +23,25 @@ DEFAULT_LANES = {"primary": 2, "secondary": 2, "tertiary": 1}
 DEFAULT_SPEED_KMH = {"primary": 50, "secondary": 50, "tertiary": 40}
 
 
-def first(value):
-    return value[0] if isinstance(value, list) else value
+CLASS_RANK = {"primary": 0, "secondary": 1, "tertiary": 2}
 
 
-def as_number(value, default: float) -> float:
-    try:
-        return float(str(first(value)).split()[0].split(";")[0])
-    except (TypeError, ValueError, IndexError):
-        return default
+def as_list(value) -> list:
+    """A merged road segment carries a list of the values of its pieces, in no fixed order."""
+    return value if isinstance(value, list) else [value]
+
+
+def smallest_number(value, default: float) -> float:
+    """The narrowest / slowest piece of a merged segment limits it (deterministic for any order)."""
+    nums = []
+    for x in as_list(value):
+        try:
+            n = float(str(x).split()[0].split(";")[0])
+        except (TypeError, ValueError, IndexError):
+            continue
+        if math.isfinite(n):
+            nums.append(n)
+    return min(nums) if nums else default
 
 
 def main() -> None:
@@ -59,15 +70,16 @@ def main() -> None:
     for u, v, d in g.edges(data=True):
         if u == v:
             continue
-        hw = str(first(d.get("highway", "tertiary"))).replace("_link", "")
-        lanes = as_number(d.get("lanes"), DEFAULT_LANES.get(hw, 1))
-        if not d.get("oneway", False):
+        hw = min((str(h).replace("_link", "") for h in as_list(d.get("highway", "tertiary"))),
+                 key=lambda h: (CLASS_RANK.get(h, 9), h))
+        lanes = smallest_number(d.get("lanes"), DEFAULT_LANES.get(hw, 1))
+        if not all(as_list(d.get("oneway", False))):
             lanes = max(1.0, lanes / 2)   # OSM counts the lanes of both directions
-        speed = as_number(d.get("maxspeed"), DEFAULT_SPEED_KMH.get(hw, 40))
+        speed = smallest_number(d.get("maxspeed"), DEFAULT_SPEED_KMH.get(hw, 40))
         key = (str(u), str(v))
         edge = {"u": key[0], "v": key[1], "length": round(float(d["length"]), 1),
                 "lanes": int(max(1, min(3, round(lanes)))), "speed_kmh": speed, "highway": hw,
-                "name": str(first(d.get("name", "")))}
+                "name": min(str(n) for n in as_list(d.get("name", "")))}
         if key not in edges or edge["length"] < edges[key]["length"]:
             edges[key] = edge
 

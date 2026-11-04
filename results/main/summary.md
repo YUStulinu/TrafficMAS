@@ -108,23 +108,23 @@ Tests against **negotiation_coord**: Mann-Whitney U, two-sided, Holm-corrected p
 
 | variant | Avg. time in system (s) | Avg. waiting time (s) | Avg. queue per approach (veh) | Max. queue (veh) | Spillback (link-seconds) | Throughput (veh/h) | Completed trips (share) | Fairness (Jain index) | CO2 per trip (g) | Messages per agent per minute |
 |---|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|
-| fixed | 322.8 ± 11.1 | 194.3 ± 10.3 | 1.45 ± 0.05 | 61.5 ± 1.1 | 12059 ± 1593 | 4089 ± 43 | 1.00 ± 0.00 | 0.13 ± 0.02 | 419.4 ± 5.8 | 5.90 ± 0.00 |
-| actuated | 166.1 ± 2.6 | 41.5 ± 2.4 | 0.50 ± 0.03 | 25.3 ± 1.4 | 404.0 ± 335.2 | 5134 ± 52 | 1.00 ± 0.00 | 0.52 ± 0.03 | 335.2 ± 2.0 | 5.90 ± 0.00 |
-| max_pressure | 211.4 ± 5.5 | 86.4 ± 5.4 | 0.95 ± 0.04 | 26.3 ± 1.1 | 2979 ± 1029 | 5042 ± 60 | 1.00 ± 0.00 | 0.47 ± 0.05 | 363.3 ± 3.2 | 5.90 ± 0.00 |
-| negotiation | 167.4 ± 1.0 | 42.9 ± 0.8 | 0.51 ± 0.01 | 19.9 ± 2.3 | 18.0 ± 24.5 | 5038 ± 73 | 1.00 ± 0.00 | 0.51 ± 0.01 | 336.8 ± 1.3 | 6.25 ± 0.01 |
-| **negotiation_coord** | 167.4 ± 1.0 | 42.9 ± 0.8 | 0.51 ± 0.01 | 20.0 ± 2.4 | 11.0 ± 15.2 | 5049 ± 57 | 1.00 ± 0.00 | 0.51 ± 0.01 | 336.8 ± 1.2 | 6.25 ± 0.01 |
+| fixed | 322.8 ± 11.1 | 194.3 ± 10.2 | 1.45 ± 0.05 | 61.5 ± 1.1 | 12055 ± 1593 | 4089 ± 43 | 1.00 ± 0.00 | 0.13 ± 0.02 | 419.5 ± 5.8 | 5.90 ± 0.00 |
+| actuated | 166.3 ± 2.6 | 41.8 ± 2.4 | 0.51 ± 0.03 | 25.5 ± 1.3 | 472.0 ± 345.7 | 5130 ± 54 | 1.00 ± 0.00 | 0.52 ± 0.03 | 335.4 ± 1.9 | 5.90 ± 0.00 |
+| max_pressure | 209.1 ± 4.1 | 84.1 ± 4.1 | 0.93 ± 0.02 | 25.8 ± 0.7 | 2602 ± 908 | 5051 ± 54 | 1.00 ± 0.00 | 0.50 ± 0.04 | 362.1 ± 2.4 | 5.90 ± 0.00 |
+| negotiation | 167.5 ± 0.9 | 43.0 ± 0.7 | 0.51 ± 0.01 | 21.8 ± 2.1 | 26.0 ± 33.1 | 5045 ± 51 | 1.00 ± 0.00 | 0.51 ± 0.01 | 336.9 ± 1.3 | 6.25 ± 0.01 |
+| **negotiation_coord** | 167.6 ± 1.0 | 43.0 ± 0.7 | 0.51 ± 0.01 | 21.8 ± 2.1 | 27.0 ± 34.9 | 5046 ± 49 | 1.00 ± 0.00 | 0.51 ± 0.01 | 336.9 ± 1.3 | 6.25 ± 0.01 |
 
 Tests against **negotiation_coord**: Mann-Whitney U, two-sided, Holm-corrected per metric; Kruskal-Wallis across all variants.
 
 | metric | Kruskal-Wallis p | vs fixed | vs actuated | vs max_pressure | vs negotiation |
 |---|---:|---:|---:|---:|---:|
 | Avg. time in system (s) | 1.18e-07 | 0.000731 | 1 | 0.000731 | 1 |
-| Avg. waiting time (s) | 1.11e-07 | 0.000731 | 0.855 | 0.000731 | 0.855 |
-| Avg. queue per approach (veh) | 1.16e-07 | 0.000731 | 0.945 | 0.000731 | 0.945 |
-| Max. queue (veh) | 8.79e-08 | 0.000338 | 0.0035 | 0.00207 | 0.969 |
-| Spillback (link-seconds) | 1.29e-08 | 0.000527 | 0.00526 | 0.000527 | 0.657 |
-| Throughput (veh/h) | 8.3e-06 | 0.000731 | 0.0772 | 1 | 1 |
+| Avg. waiting time (s) | 1.08e-07 | 0.000731 | 0.769 | 0.000731 | 0.85 |
+| Avg. queue per approach (veh) | 1.01e-07 | 0.000731 | 0.615 | 0.000731 | 0.909 |
+| Max. queue (veh) | 6.9e-07 | 0.00034 | 0.0167 | 0.0133 | 1 |
+| Spillback (link-seconds) | 2.01e-08 | 0.000598 | 0.0153 | 0.000598 | 1 |
+| Throughput (veh/h) | 5.49e-06 | 0.000731 | 0.0421 | 1 | 1 |
 | Completed trips (share) | 0.00023 | 0.0597 | 1 | 1 | 1 |
-| Fairness (Jain index) | 5.22e-05 | 0.000731 | 1 | 1 | 1 |
-| CO2 per trip (g) | 9.54e-08 | 0.000731 | 0.483 | 0.000731 | 1 |
-| Messages per agent per minute | 3.15e-07 | 0.000731 | 0.000731 | 0.000731 | 0.677 |
+| Fairness (Jain index) | 7.19e-05 | 0.000731 | 1 | 1 | 1 |
+| CO2 per trip (g) | 1.05e-07 | 0.000731 | 0.689 | 0.000731 | 0.97 |
+| Messages per agent per minute | 3.04e-07 | 0.000727 | 0.000727 | 0.000727 | 0.91 |

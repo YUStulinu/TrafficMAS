@@ -74,20 +74,20 @@ Tests against **full**: Mann-Whitney U, two-sided, Holm-corrected per metric; Kr
 
 | variant | Avg. time in system (s) | Avg. waiting time (s) | Avg. queue per approach (veh) | Spillback (link-seconds) | Fairness (Jain index) | Messages per agent per minute |
 |---|---:|---:|---:|---:|---:|---:|
-| **full** | 167.4 ± 1.0 | 42.9 ± 0.8 | 0.51 ± 0.01 | 11.0 ± 15.2 | 0.51 ± 0.01 | 6.25 ± 0.01 |
-| no_coordinator | 167.4 ± 1.0 | 42.9 ± 0.8 | 0.51 ± 0.01 | 18.0 ± 24.5 | 0.51 ± 0.01 | 6.25 ± 0.01 |
-| no_bids | 167.4 ± 1.0 | 42.9 ± 0.8 | 0.51 ± 0.01 | 11.0 ± 15.2 | 0.51 ± 0.01 | 6.25 ± 0.01 |
-| no_credits | 167.4 ± 1.0 | 42.9 ± 0.8 | 0.51 ± 0.01 | 11.0 ± 15.2 | 0.51 ± 0.01 | 6.25 ± 0.01 |
-| no_platoons | 167.4 ± 1.2 | 42.8 ± 0.9 | 0.51 ± 0.01 | 16.0 ± 18.2 | 0.52 ± 0.01 | 5.90 ± 0.00 |
-| no_commitment | 178.1 ± 2.7 | 53.4 ± 2.5 | 0.62 ± 0.03 | 93.0 ± 78.9 | 0.38 ± 0.02 | 6.26 ± 0.02 |
+| **full** | 167.6 ± 1.0 | 43.0 ± 0.7 | 0.51 ± 0.01 | 27.0 ± 34.9 | 0.51 ± 0.01 | 6.25 ± 0.01 |
+| no_coordinator | 167.5 ± 0.9 | 43.0 ± 0.7 | 0.51 ± 0.01 | 26.0 ± 33.1 | 0.51 ± 0.01 | 6.25 ± 0.01 |
+| no_bids | 167.6 ± 1.0 | 43.0 ± 0.7 | 0.51 ± 0.01 | 27.0 ± 34.9 | 0.51 ± 0.01 | 6.25 ± 0.01 |
+| no_credits | 167.6 ± 1.0 | 43.0 ± 0.7 | 0.51 ± 0.01 | 27.0 ± 34.9 | 0.51 ± 0.01 | 6.25 ± 0.01 |
+| no_platoons | 167.4 ± 1.0 | 42.9 ± 0.7 | 0.51 ± 0.01 | 14.0 ± 16.9 | 0.52 ± 0.01 | 5.90 ± 0.00 |
+| no_commitment | 177.7 ± 2.1 | 52.9 ± 1.7 | 0.62 ± 0.02 | 98.0 ± 70.2 | 0.39 ± 0.02 | 6.25 ± 0.01 |
 
 Tests against **full**: Mann-Whitney U, two-sided, Holm-corrected per metric; Kruskal-Wallis across all variants.
 
 | metric | Kruskal-Wallis p | vs no_coordinator | vs no_bids | vs no_credits | vs no_platoons | vs no_commitment |
 |---|---:|---:|---:|---:|---:|---:|
-| Avg. time in system (s) | 0.000163 | 1 | 1 | 1 | 1 | 0.000913 |
+| Avg. time in system (s) | 0.000151 | 1 | 1 | 1 | 1 | 0.000913 |
 | Avg. waiting time (s) | 0.000159 | 1 | 1 | 1 | 1 | 0.000913 |
-| Avg. queue per approach (veh) | 0.000129 | 1 | 1 | 1 | 1 | 0.000913 |
-| Spillback (link-seconds) | 0.0874 | 1 | 1 | 1 | 1 | 0.118 |
-| Fairness (Jain index) | 4.05e-05 | 1 | 1 | 1 | 0.416 | 0.000913 |
-| Messages per agent per minute | 0.000123 | 1 | 1 | 1 | 0.000913 | 1 |
+| Avg. queue per approach (veh) | 0.000117 | 1 | 1 | 1 | 1 | 0.000913 |
+| Spillback (link-seconds) | 0.121 | 1 | 1 | 1 | 1 | 0.254 |
+| Fairness (Jain index) | 8.2e-06 | 1 | 1 | 1 | 0.069 | 0.000913 |
+| Messages per agent per minute | 4.91e-05 | 1 | 1 | 1 | 0.000908 | 1 |

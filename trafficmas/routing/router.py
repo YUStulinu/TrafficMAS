@@ -67,8 +67,6 @@ class Router:
         best: dict[str, float] = {}
         parent: dict[str, str | None] = {}
         for link, t_end in starts:
-            if link.v == dest:
-                return [link], t_end
             if t_end < best.get(link.id, math.inf):
                 best[link.id] = t_end
                 parent[link.id] = None

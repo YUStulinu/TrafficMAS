@@ -13,23 +13,23 @@ from scipy import stats
 from trafficmas.viz.plots import grouped_bars
 
 METRICS = {
-    "avg_time_in_system": ("Avg. time in system (s)", "lower"),
-    "avg_travel_time": ("Avg. travel time, completed trips (s)", "lower"),
-    "avg_wait_time": ("Avg. waiting time (s)", "lower"),
-    "avg_queue": ("Avg. queue per approach (veh)", "lower"),
-    "max_queue": ("Max. queue (veh)", "lower"),
-    "spillback_link_s": ("Spillback (link-seconds)", "lower"),
-    "throughput_vph": ("Throughput (veh/h)", "higher"),
-    "completion_rate": ("Completed trips (share)", "higher"),
-    "jain_fairness": ("Fairness (Jain index)", "higher"),
-    "co2_g_per_trip": ("CO2 per trip (g)", "lower"),
-    "messages_per_agent_min": ("Messages per agent per minute", "lower"),
-    "ev_response_time": ("Ambulance response time (s)", "lower"),
-    "ev_delay": ("Ambulance delay vs. free flow (s)", "lower"),
-    "disruption_per_ev": ("Extra delay of other traffic per ambulance (veh-s)", "lower"),
-    "selfish_node_wait": ("Waiting time at the selfish junction (s)", "lower"),
-    "others_wait": ("Waiting time at the other junctions (s)", "lower"),
-    "selfish_bid_share": ("Share of won bids taken by the selfish junction", "lower"),
+    "avg_time_in_system": "Avg. time in system (s)",
+    "avg_travel_time": "Avg. travel time, completed trips (s)",
+    "avg_wait_time": "Avg. waiting time (s)",
+    "avg_queue": "Avg. queue per approach (veh)",
+    "max_queue": "Max. queue (veh)",
+    "spillback_link_s": "Spillback (link-seconds)",
+    "throughput_vph": "Throughput (veh/h)",
+    "completion_rate": "Completed trips (share)",
+    "jain_fairness": "Fairness (Jain index)",
+    "co2_g_per_trip": "CO2 per trip (g)",
+    "messages_per_agent_min": "Messages per agent per minute",
+    "ev_response_time": "Ambulance response time (s)",
+    "ev_delay": "Ambulance delay vs. free flow (s)",
+    "disruption_per_ev": "Extra delay of other traffic per ambulance (veh-s)",
+    "selfish_node_wait": "Waiting time at the selfish junction (s)",
+    "others_wait": "Waiting time at the other junctions (s)",
+    "selfish_bid_share": "Share of won bids taken by the selfish junction",
 }
 
 
@@ -117,7 +117,7 @@ def analyze(result_dir: str | Path, docs_dir: str | Path | None = None) -> Path:
     if cfg.get("description"):
         lines += [cfg["description"].strip(), ""]
     for scen in scenarios:
-        lines += [f"## {scen}", "", "| variant | " + " | ".join(METRICS.get(m, (m,))[0] for m in metrics) + " |",
+        lines += [f"## {scen}", "", "| variant | " + " | ".join(METRICS.get(m, m) for m in metrics) + " |",
                   "|---|" + "---:|" * len(metrics)]
         for lab in labels:
             cells = [fmt(*mean_ci(values(scen, lab, m))) for m in metrics]
@@ -145,7 +145,7 @@ def analyze(result_dir: str | Path, docs_dir: str | Path | None = None) -> Path:
                     except ValueError:
                         raw.append(1.0)
                 adj = holm(raw)
-                lines.append(f"| {METRICS.get(m, (m,))[0]} | {kw:.3g} | " + " | ".join(f"{p:.3g}" for p in adj) + " |")
+                lines.append(f"| {METRICS.get(m, m)} | {kw:.3g} | " + " | ".join(f"{p:.3g}" for p in adj) + " |")
             lines.append("")
     (result_dir / "summary.md").write_text("\n".join(lines), encoding="utf-8")
 
@@ -153,7 +153,7 @@ def analyze(result_dir: str | Path, docs_dir: str | Path | None = None) -> Path:
         m = fig["metric"]
         data = {lab: [mean_ci(values(s, lab, m)) for s in scenarios] for lab in labels}
         out = Path(docs_dir) / fig["file"] if docs_dir else result_dir / fig["file"]
-        grouped_bars(scenarios, data, METRICS.get(m, (m,))[0], fig.get("title", ""), out,
+        grouped_bars(scenarios, data, METRICS.get(m, m), fig.get("title", ""), out,
                      highlight=ref)
     print(f"wrote {result_dir / 'summary.md'}")
     return result_dir / "summary.md"

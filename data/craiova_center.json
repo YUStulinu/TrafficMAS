@@ -1086,7 +1086,7 @@
    "lanes": 2,
    "speed_kmh": 50.0,
    "highway": "tertiary",
-   "name": "Strada Mihail Kog\u0103lniceanu"
+   "name": "Strada Eugeniu Carada"
   },
   {
    "u": "38",
@@ -1347,7 +1347,7 @@
    "lanes": 1,
    "speed_kmh": 50.0,
    "highway": "tertiary",
-   "name": "Strada Madona Dudu"
+   "name": "Strada Ion Maiorescu"
   },
   {
    "u": "50",
@@ -1392,7 +1392,7 @@
    "lanes": 1,
    "speed_kmh": 50.0,
    "highway": "tertiary",
-   "name": "Strada Madona Dudu"
+   "name": "Strada Ion Maiorescu"
   },
   {
    "u": "53",
@@ -1695,7 +1695,7 @@
    "u": "68",
    "v": "42",
    "length": 91.8,
-   "lanes": 2,
+   "lanes": 1,
    "speed_kmh": 50.0,
    "highway": "secondary",
    "name": "Calea Bucure\u0219ti"

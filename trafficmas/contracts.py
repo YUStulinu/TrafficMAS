@@ -60,10 +60,6 @@ class Controller(Protocol):
     to their intersection through `on_message`.
     """
 
-    name: str
-
-    def attach(self, agent: IntersectionAgent) -> None: ...
-
     def decide(self, agent: IntersectionAgent, now: float) -> int | None: ...
 
     def on_message(self, agent: IntersectionAgent, msg: Message) -> None: ...

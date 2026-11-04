@@ -87,3 +87,10 @@ def test_router_respects_no_u_turn(grid):
     start = grid.link("n1_0", "n1_1")
     path, _ = router.route([(start, 0.0)], "W1")
     assert path[1].v != "n1_0"   # no U-turn straight back
+
+
+def test_router_picks_the_faster_of_two_direct_start_links(grid):
+    router = Router(grid, TrafficInfoBoard())
+    slow, fast = grid.link("n1_0", "n1_1"), grid.link("n1_2", "n1_1")
+    path, t = router.route([(slow, 50.0), (fast, 10.0)], "n1_1")
+    assert path == [fast] and t == 10.0

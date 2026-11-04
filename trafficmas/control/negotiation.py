@@ -68,7 +68,6 @@ class Platoon:
 
 
 class NegotiationController(BaseController):
-    name = "negotiation"
 
     def __init__(self, min_green: float = 5.0, max_green: float = 60.0, max_red: float = 90.0,
                  hysteresis: float = 1.0, commit: bool = True, max_commit: float = 40.0,

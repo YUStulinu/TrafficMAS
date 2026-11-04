@@ -40,12 +40,6 @@ def clearance_time(movements: list[Movement]) -> float:
 
 
 class BaseController:
-    name = "base"
-    min_green = 5.0
-
-    def attach(self, agent: IntersectionAgent) -> None:
-        pass
-
     def decide(self, agent: IntersectionAgent, now: float) -> int | None:
         return None
 
