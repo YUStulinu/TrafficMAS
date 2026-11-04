@@ -18,12 +18,10 @@ if TYPE_CHECKING:
 
 
 class CoordinatorAgent:
-    def __init__(self, sim: Simulation, zone: str, members: list[str], gating: bool = False,
+    def __init__(self, sim: Simulation, zone: str, gating: bool = False,
                  info_interval: float = 30.0, spill_threshold: float = 0.85, directive_duration: float = 30.0) -> None:
         self.sim = sim
-        self.zone = zone
         self.id = f"coord:{zone}"
-        self.members = set(members)
         self.gating = gating
         self.info_interval = info_interval
         self.spill_threshold = spill_threshold
@@ -31,8 +29,6 @@ class CoordinatorAgent:
         self.links: dict[str, list[int]] = {}       # link id -> [queued, occupancy, storage]
         self.green_share: dict[str, float] = {}     # link id -> share of time its node is green for it
         self.active: dict[tuple[str, str], float] = {}   # (kind, link) -> until
-        self.spillbacks_detected = 0
-        self.directives_sent = 0
 
     def on_message(self, msg: Message) -> None:
         if msg.topic != TOPIC_STATUS:
@@ -52,20 +48,14 @@ class CoordinatorAgent:
                 continue
             link = net.links[lid]
             until = now + self.directive_duration
-            sent = False
             downstream = self.sim.agents.get(link.v)
             if downstream is not None and downstream.signalized and self.active.get(("drain", lid), -1) < now:
                 self.active[("drain", lid)] = until
                 self.sim.bus.send(Message(self.id, link.v, "REQUEST", TOPIC_DRAIN, {"link": lid, "until": until}))
-                sent = True
             upstream = self.sim.agents.get(link.u)
             if upstream is not None and upstream.signalized and self.active.get(("meter", lid), -1) < now:
                 self.active[("meter", lid)] = until
                 self.sim.bus.send(Message(self.id, link.u, "REQUEST", TOPIC_METER, {"link": lid, "until": until}))
-                sent = True
-            if sent:
-                self.spillbacks_detected += 1
-                self.directives_sent += 1
 
     def delay_estimates(self) -> dict[str, float]:
         net = self.sim.net

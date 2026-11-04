@@ -44,7 +44,6 @@ class Reservation:
     phase: int
     eta: float
     priority: int
-    requested_at: float
     local: bool = False   # created by local pre-emption (sensor) instead of a negotiated corridor
 
 
@@ -53,7 +52,6 @@ class IntersectionAgent:
         self.sim = sim
         self.id = node.id
         self.node = node
-        self.zone = zone
         self.coordinator_id = f"coord:{zone}"
         self.phases: list[list[Movement]] = node.phases
         self.signalized = node.signalized and len(self.phases) > 1
@@ -71,7 +69,6 @@ class IntersectionAgent:
         self.drain: dict[str, float] = {}   # link id -> until (coordinator directive)
         self.meter: dict[str, float] = {}   # out link id -> until (coordinator directive)
         self.released: dict[str, int] = {}  # out link id -> vehicles released during this green
-        self.switches = 0
         if controller is not None:
             controller.attach(self)
 
@@ -117,7 +114,7 @@ class IntersectionAgent:
             now = env.now
             self.step(now, dt)
             if now >= next_status:
-                self.report_status(now)
+                self.report_status()
                 next_status = now + self.sim.status_interval
             yield env.timeout(dt)
 
@@ -147,7 +144,6 @@ class IntersectionAgent:
         self.last_green[self.phase] = now
         self.next_phase = p
         self.intergreen_left = INTERGREEN
-        self.switches += 1
 
     # ------------------------------------------------------------------ queue service
     def discharge(self, now: float, dt: float) -> None:
@@ -181,7 +177,7 @@ class IntersectionAgent:
         while q and m.credit >= 1.0 and link.cap_credit >= 1.0:
             v = q[0]
             if not v.is_emergency and not m.outbound.has_space():
-                self.sim.metrics.blocked(m, now)
+                self.sim.metrics.blocked_events += 1
                 break
             q.popleft()
             m.credit -= 1.0
@@ -227,8 +223,7 @@ class IntersectionAgent:
         for other in self.reservations.values():
             if other.phase != phase and other.priority > ev.priority:
                 return
-        self.reservations[ev.id] = Reservation(ev.id, in_link.id, out_link.id, phase, eta, ev.priority,
-                                               self.sim.env.now, local=True)
+        self.reservations[ev.id] = Reservation(ev.id, in_link.id, out_link.id, phase, eta, ev.priority, local=True)
 
     def ev_passed(self, ev_id: str) -> None:
         if self.reservations.pop(ev_id, None) is not None:
@@ -246,7 +241,7 @@ class IntersectionAgent:
             self.send(msg.sender, "REJECT", TOPIC_CORRIDOR, {"node": self.id, "reason": "not signalised"},
                       msg.conversation)
             return
-        new = Reservation(msg.sender, p["in_link"], p["out_link"], phase, p["eta"], p["priority"], self.sim.env.now)
+        new = Reservation(msg.sender, p["in_link"], p["out_link"], phase, p["eta"], p["priority"])
         conflicts = [r for r in self.reservations.values()
                      if r.ev_id != new.ev_id and r.phase != phase and self._overlaps(r, new)]
         if any(r.priority >= new.priority for r in conflicts):
@@ -277,7 +272,7 @@ class IntersectionAgent:
         elif self.controller is not None:
             self.controller.on_message(self, msg)
 
-    def report_status(self, now: float) -> None:
+    def report_status(self) -> None:
         links = {link.id: [link.queued, link.occupancy, link.storage] for link in self.in_links}
         out = {link.id: [link.queued, link.occupancy, link.storage] for link in self.sim.net.out_links(self.id)}
         self.send(self.coordinator_id, "INFORM", TOPIC_STATUS,

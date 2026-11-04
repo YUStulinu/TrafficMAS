@@ -131,9 +131,6 @@ class NegotiationController(BaseController):
         self.platoons_sent = 0
 
     # ------------------------------------------------------------------ setup
-    def attach(self, agent: IntersectionAgent) -> None:
-        self.agent = agent
-
     def _resolve_neighbours(self, agent: IntersectionAgent) -> None:
         if self._resolved:
             return

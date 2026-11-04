@@ -89,8 +89,7 @@ class Simulation:
         gating = uses_coordination(controller, self.controller_params)
         self.coordinators: list[CoordinatorAgent] = []
         for zone in sorted(set(zone_of.values())):
-            members = [nid for nid, z in zone_of.items() if z == zone]
-            c = CoordinatorAgent(self, zone, members, gating=gating,
+            c = CoordinatorAgent(self, zone, gating=gating,
                                  info_interval=float(coord_cfg["info_interval"]),
                                  spill_threshold=float(coord_cfg["spill_threshold"]))
             self.coordinators.append(c)

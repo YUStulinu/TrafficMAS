@@ -2,7 +2,7 @@
 
 **Traffic lights that negotiate.** In this multi-agent traffic simulator every intersection is an autonomous agent. It controls its own lights and negotiates green time with its neighbours, so congestion does not spread from one junction to the next. Ambulances reserve a corridor of green lights ahead of them.
 
-The project is written entirely in Python (SimPy, NetworkX, OSMnx, Pygame, Matplotlib). It was built for the **Multi-Agent Systems** course (Master, year 2) by the team **GreenWave Agents**.
+The project is written entirely in Python (SimPy, OSMnx/NetworkX for the map import, Pygame, Matplotlib, SciPy). It was built for the **Multi-Agent Systems** course (Master, year 2) by the team **GreenWave Agents**.
 
 ![Live view: two ambulances with reserved corridors crossing the grid](docs/demo.gif)
 

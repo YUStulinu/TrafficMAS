@@ -4,7 +4,7 @@ from __future__ import annotations
 import statistics
 from typing import TYPE_CHECKING
 
-from trafficmas.network.road import Link, Movement
+from trafficmas.network.road import Link
 
 if TYPE_CHECKING:
     from trafficmas.agents.vehicle import Vehicle
@@ -36,7 +36,6 @@ class MetricsCollector:
         self.ev_trips: list[dict] = []
         self.active: dict[str, Vehicle] = {}
         self.spawned = 0
-        self.unroutable = 0
         self.blocked_events = 0
         self.corridor_served = 0
         self.corridor_conflicts = 0
@@ -51,9 +50,6 @@ class MetricsCollector:
         self.spawned += 1
         self.active[v.id] = v
 
-    def vehicle_entered(self, v: Vehicle) -> None:
-        pass
-
     def vehicle_done(self, v: Vehicle, now: float) -> None:
         self.active.pop(v.id, None)
         rec = {"id": v.id, "origin": v.origin, "dest": v.dest, "depart": v.depart, "arrive": now,
@@ -66,9 +62,6 @@ class MetricsCollector:
             self.ev_trips.append(rec)
         else:
             self.trips.append(rec)
-
-    def blocked(self, m: Movement, now: float) -> None:
-        self.blocked_events += 1
 
     def discharged(self, link: Link, wait: float) -> None:
         acc = self.approach_wait.setdefault(link.id, [0.0, 0])

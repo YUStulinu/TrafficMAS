@@ -11,8 +11,6 @@ import math
 from collections import deque
 from dataclasses import dataclass, field
 
-import networkx as nx
-
 VEHICLE_SPACING = 7.5   # m of road taken by one vehicle in a jam
 SAT_FLOW_PER_LANE = 0.5  # veh/s discharged per lane at saturation (1800 veh/h)
 
@@ -118,7 +116,6 @@ def _axis_distance(a: float, b: float) -> float:
 class RoadNetwork:
     def __init__(self, name: str) -> None:
         self.name = name
-        self.graph = nx.DiGraph()
         self.nodes: dict[str, Node] = {}
         self.links: dict[str, Link] = {}
         self._out: dict[str, list[Link]] = {}
@@ -129,7 +126,6 @@ class RoadNetwork:
                  signalized: bool | None = None) -> Node:
         node = Node(nid, x, y, gateway=gateway, side=side, force_signal=signalized)
         self.nodes[nid] = node
-        self.graph.add_node(nid, x=x, y=y)
         self._out[nid] = []
         self._in[nid] = []
         return node
@@ -144,7 +140,6 @@ class RoadNetwork:
         self.links[link.id] = link
         self._out[u].append(link)
         self._in[v].append(link)
-        self.graph.add_edge(u, v, id=link.id)
         return link
 
     def add_road(self, u: str, v: str, **kw) -> tuple[Link, Link]:

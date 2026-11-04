@@ -1,13 +1,11 @@
 simpy>=4.1
-networkx>=3.2
-numpy>=1.26
 scipy>=1.11
 matplotlib>=3.8
 pyyaml>=6
 # pygame-ce is the maintained fork of pygame, with wheels for current Python versions
 pygame-ce>=2.4
 pillow>=10
-# only for scripts/fetch_osm.py (re-downloading the OpenStreetMap network)
+# only for scripts/fetch_osm.py (re-downloading the OpenStreetMap network); brings NetworkX
 osmnx>=2.0
 # tests and lint
 pytest

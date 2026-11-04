@@ -41,9 +41,6 @@ class MessageBus:
     def subscribe_vehicle(self, vid: str, callback: Callable[[Message], None]) -> None:
         self.vehicle_subscribers[vid] = callback
 
-    def unsubscribe_vehicle(self, vid: str) -> None:
-        self.vehicle_subscribers.pop(vid, None)
-
     def send(self, msg: Message) -> None:
         msg.sent_at = self.env.now
         if self.log is not None:

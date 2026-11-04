@@ -100,10 +100,8 @@ class Vehicle:
 
     # ------------------------------------------------------------------ lifecycle
     def run(self, env):
-        sim = self.sim
         if not self.plan(env.now):
-            sim.metrics.unroutable += 1
-            return
+            return   # no route to the destination: the engine drops the vehicle
         self.free_flow = sum(self.link_time(link) for link in self.route)
         t0 = env.now
         while not self.can_enter(self.route[0]):
@@ -112,7 +110,6 @@ class Vehicle:
                 self.plan(env.now)
         self.wait += env.now - t0
         self.entered_network = env.now
-        sim.metrics.vehicle_entered(self)
         self.enter(self.route[0], env.now, first=True)
         while True:
             yield env.timeout(max(0.0, self.stopline_at - env.now))
