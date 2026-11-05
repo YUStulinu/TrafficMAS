@@ -1,0 +1,73 @@
+# Who owns which part of TrafficMAS+.
+#
+# This file is the single source of truth for code ownership:
+#   - scripts/check_ownership.py reads it in CI and fails a pull request or a push to a
+#     part branch that changes files outside the parts its author may edit;
+#   - `python scripts/check_ownership.py --write-codeowners` regenerates .github/CODEOWNERS
+#     from it (fill in the `github` usernames first).
+#
+# A file belongs to the part with the longest matching path. Files that match no part are
+# shared (contracts, packaging, CI, end-to-end tests, README): only the maintainer changes them.
+
+maintainer: part2
+
+parts:
+  part1:
+    member: IANCOVICI Teodor-Gabriel
+    role: Simulation Core & Network Architect
+    branch: part1-iancovici
+    github: ""
+    paths:
+      - trafficmas/sim/
+      - trafficmas/network/
+      - trafficmas/bus/
+      - trafficmas/config.py
+      - data/
+      - scenarios/
+      - scripts/fetch_osm.py
+      - tests/test_core.py
+      - tests/test_network.py
+      - tests/test_bus.py
+
+  part2:
+    member: PRODAN Constantin-Iustin
+    role: Intersection Control & Negotiation
+    branch: part2-prodan
+    github: YUStulinu
+    also_edits: [part3]          # part 3's owner asked for help with it
+    paths:
+      - trafficmas/agents/intersection.py
+      - trafficmas/agents/coordinator.py
+      - trafficmas/control/
+      - tests/test_control.py
+
+  part3:
+    member: GHEORGHEVICI Mihai
+    role: Vehicles, Routing & Emergency
+    branch: part3-gheorghevici
+    github: ""
+    paths:
+      - trafficmas/agents/vehicle.py
+      - trafficmas/agents/emergency.py
+      - trafficmas/routing/
+      - scenarios/grid_emergency.yaml
+      - scenarios/grid_incident.yaml
+      - tests/test_routing.py
+      - tests/test_emergency.py
+
+  part4:
+    member: DOBRA Robert-Cristian
+    role: Evaluation, Visualization & Experiments
+    branch: part4-dobra
+    github: ""
+    paths:
+      - trafficmas/metrics/
+      - trafficmas/viz/
+      - trafficmas/experiments/
+      - trafficmas/cli.py
+      - experiments/
+      - results/
+      - docs/
+      - scripts/run_all_experiments.sh
+      - scripts/plot_queues.py
+      - tests/test_metrics.py

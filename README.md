@@ -6,12 +6,14 @@ The project is written entirely in Python (SimPy, OSMnx/NetworkX for the map imp
 
 ![Live view: two ambulances with reserved corridors crossing the grid](docs/demo.gif)
 
-| | Member | Role | Code |
+| | Member | Role | Branch |
 |---|---|---|---|
-| 1 | IANCOVICI P.-A. TEODOR-GABRIEL | Simulation Core & Network Architect | `sim/`, `network/`, `bus/` |
-| 2 | PRODAN F.-C. CONSTANTIN-IUSTIN | Intersection Control & Negotiation | `agents/intersection.py`, `agents/coordinator.py`, `control/` |
-| 3 | GHEORGHEVICI F. MIHAI FLORIN | Vehicles, Routing & Emergency | `agents/vehicle.py`, `agents/emergency.py`, `routing/` |
-| 4 | DOBRA C. ROBERT-CRISTIAN | Evaluation, Visualization & Experiments | `metrics/`, `viz/`, `experiments/` |
+| 1 | IANCOVICI TEODOR-GABRIEL | Simulation Core & Network Architect | `part1-iancovici` |
+| 2 | PRODAN CONSTANTIN-IUSTIN | Intersection Control & Negotiation | `part2-prodan` |
+| 3 | GHEORGHEVICI MIHAI | Vehicles, Routing & Emergency | `part3-gheorghevici` |
+| 4 | DOBRA ROBERT-CRISTIAN | Evaluation, Visualization & Experiments | `part4-dobra` |
+
+Each member owns the code of their part and works on their own branch. [TEAM.md](TEAM.md) lists which files belong to whom and explains the workflow; CI checks that nobody changes someone else's part.
 
 The project plan is in [docs/TrafficMAS_Planul_Proiectului.pdf](docs/TrafficMAS_Planul_Proiectului.pdf), in Romanian.
 

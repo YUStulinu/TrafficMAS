@@ -1,0 +1,23 @@
+name: Ownership
+
+# Each team member works on their own branch (see TEAM.md). This check fails when a
+# part branch changes files that belong to another part (rules in .github/team.yml).
+
+on:
+  pull_request:
+  push:
+    branches: ["part*"]
+
+jobs:
+  ownership:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.13"
+      - run: pip install pyyaml
+      - name: Changed files belong to the branch owner
+        run: python scripts/check_ownership.py "${{ github.head_ref || github.ref_name }}" origin/main
