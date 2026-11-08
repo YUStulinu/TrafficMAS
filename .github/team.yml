@@ -16,7 +16,7 @@ parts:
     member: IANCOVICI Teodor-Gabriel
     role: Simulation Core & Network Architect
     branch: part1-iancovici
-    github: ""
+    github: IancoviciTeodor
     paths:
       - trafficmas/sim/
       - trafficmas/network/
@@ -45,7 +45,7 @@ parts:
     member: GHEORGHEVICI Mihai
     role: Vehicles, Routing & Emergency
     branch: part3-gheorghevici
-    github: ""
+    github: B2wf
     paths:
       - trafficmas/agents/vehicle.py
       - trafficmas/agents/emergency.py
@@ -59,7 +59,7 @@ parts:
     member: DOBRA Robert-Cristian
     role: Evaluation, Visualization & Experiments
     branch: part4-dobra
-    github: ""
+    github: impactless
     paths:
       - trafficmas/metrics/
       - trafficmas/viz/

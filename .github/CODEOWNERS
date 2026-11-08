@@ -1,34 +1,34 @@
 # Generated from .github/team.yml by scripts/check_ownership.py --write-codeowners
 
 * @YUStulinu
-# /data/ (IANCOVICI Teodor-Gabriel: GitHub username missing)
-# /docs/ (DOBRA Robert-Cristian: GitHub username missing)
-# /results/ (DOBRA Robert-Cristian: GitHub username missing)
-# /scenarios/ (IANCOVICI Teodor-Gabriel: GitHub username missing)
-# /experiments/ (DOBRA Robert-Cristian: GitHub username missing)
-# /trafficmas/bus/ (IANCOVICI Teodor-Gabriel: GitHub username missing)
-# /trafficmas/sim/ (IANCOVICI Teodor-Gabriel: GitHub username missing)
-# /trafficmas/viz/ (DOBRA Robert-Cristian: GitHub username missing)
-# /tests/test_bus.py (IANCOVICI Teodor-Gabriel: GitHub username missing)
-# /trafficmas/cli.py (DOBRA Robert-Cristian: GitHub username missing)
-# /tests/test_core.py (IANCOVICI Teodor-Gabriel: GitHub username missing)
+/data/ @IancoviciTeodor @YUStulinu
+/docs/ @YUStulinu @impactless
+/results/ @YUStulinu @impactless
+/scenarios/ @IancoviciTeodor @YUStulinu
+/experiments/ @YUStulinu @impactless
+/trafficmas/bus/ @IancoviciTeodor @YUStulinu
+/trafficmas/sim/ @IancoviciTeodor @YUStulinu
+/trafficmas/viz/ @YUStulinu @impactless
+/tests/test_bus.py @IancoviciTeodor @YUStulinu
+/trafficmas/cli.py @YUStulinu @impactless
+/tests/test_core.py @IancoviciTeodor @YUStulinu
 /trafficmas/control/ @YUStulinu
-# /trafficmas/metrics/ (DOBRA Robert-Cristian: GitHub username missing)
-# /trafficmas/network/ (IANCOVICI Teodor-Gabriel: GitHub username missing)
-/trafficmas/routing/ @YUStulinu
-# /scripts/fetch_osm.py (IANCOVICI Teodor-Gabriel: GitHub username missing)
-# /trafficmas/config.py (IANCOVICI Teodor-Gabriel: GitHub username missing)
+/trafficmas/metrics/ @YUStulinu @impactless
+/trafficmas/network/ @IancoviciTeodor @YUStulinu
+/trafficmas/routing/ @YUStulinu @B2wf
+/scripts/fetch_osm.py @IancoviciTeodor @YUStulinu
+/trafficmas/config.py @IancoviciTeodor @YUStulinu
 /tests/test_control.py @YUStulinu
-# /tests/test_metrics.py (DOBRA Robert-Cristian: GitHub username missing)
-# /tests/test_network.py (IANCOVICI Teodor-Gabriel: GitHub username missing)
-/tests/test_routing.py @YUStulinu
-# /scripts/plot_queues.py (DOBRA Robert-Cristian: GitHub username missing)
-/tests/test_emergency.py @YUStulinu
-# /trafficmas/experiments/ (DOBRA Robert-Cristian: GitHub username missing)
-/scenarios/grid_incident.yaml @YUStulinu
-/trafficmas/agents/vehicle.py @YUStulinu
-/scenarios/grid_emergency.yaml @YUStulinu
-# /scripts/run_all_experiments.sh (DOBRA Robert-Cristian: GitHub username missing)
-/trafficmas/agents/emergency.py @YUStulinu
+/tests/test_metrics.py @YUStulinu @impactless
+/tests/test_network.py @IancoviciTeodor @YUStulinu
+/tests/test_routing.py @YUStulinu @B2wf
+/scripts/plot_queues.py @YUStulinu @impactless
+/tests/test_emergency.py @YUStulinu @B2wf
+/trafficmas/experiments/ @YUStulinu @impactless
+/scenarios/grid_incident.yaml @YUStulinu @B2wf
+/trafficmas/agents/vehicle.py @YUStulinu @B2wf
+/scenarios/grid_emergency.yaml @YUStulinu @B2wf
+/scripts/run_all_experiments.sh @YUStulinu @impactless
+/trafficmas/agents/emergency.py @YUStulinu @B2wf
 /trafficmas/agents/coordinator.py @YUStulinu
 /trafficmas/agents/intersection.py @YUStulinu

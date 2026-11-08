@@ -58,9 +58,14 @@ def check(branch: str, base: str) -> int:
 
 
 def write_codeowners() -> None:
-    """GitHub applies the last matching rule, so shared files come first and longer paths last."""
+    """Reviewers of every part: the people who may edit it plus the maintainer.
+
+    Nobody can approve their own pull request on GitHub, so the maintainer reviews the
+    owner's changes; who may *change* a part is enforced by the ownership check instead.
+    GitHub applies the last matching rule, so shared files come first and longer paths last.
+    """
     def handles(part: str) -> list[str]:
-        owners = [p for p, cfg in TEAM["parts"].items() if part in editable_by(p)]
+        owners = [p for p in TEAM["parts"] if part in editable_by(p) or p == TEAM.get("maintainer")]
         return [f"@{TEAM['parts'][p]['github']}" for p in owners if TEAM["parts"][p]["github"]]
 
     lines = ["# Generated from .github/team.yml by scripts/check_ownership.py --write-codeowners", ""]

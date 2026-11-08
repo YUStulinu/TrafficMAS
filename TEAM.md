@@ -47,7 +47,7 @@ Every push to your branch runs the tests and the ownership check on GitHub (the 
 
 1. Open a pull request from your branch into `main`.
 2. CI must be green: tests, lint and ownership.
-3. The owner of the changed files approves it. GitHub asks them automatically through [.github/CODEOWNERS](.github/CODEOWNERS).
+3. A reviewer approves it: the owner of the changed files or the maintainer (GitHub does not let anyone approve their own pull request). GitHub asks them automatically through [.github/CODEOWNERS](.github/CODEOWNERS).
 4. Merge it.
 
 To get the others' latest work into your branch:
