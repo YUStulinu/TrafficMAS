@@ -69,6 +69,10 @@ class IntersectionAgent:
         self.drain: dict[str, float] = {}   # link id -> until (coordinator directive)
         self.meter: dict[str, float] = {}   # out link id -> until (coordinator directive)
         self.released: dict[str, int] = {}  # out link id -> vehicles released during this green
+        self.ev_queued = 0                  # ambulances waiting at this junction's stop lines
+        # the queue objects never change, so the hot loop below can hold on to them
+        self._in_queues = [(link, list(link.queues.values())) for link in self.in_links]
+        self._phase_queues = [[(m, m.queue) for m in ph] for ph in self.phases]
 
     # ------------------------------------------------------------------ state
     @property
@@ -145,24 +149,28 @@ class IntersectionAgent:
 
     # ------------------------------------------------------------------ queue service
     def discharge(self, now: float, dt: float) -> None:
-        for link in self.in_links:
-            if link.queued:
-                link.cap_credit = min(link.cap_credit + link.sat_cap * dt, max(1.0, link.sat_cap * dt))
+        for link, queues in self._in_queues:
+            if any(queues):
+                cap = link.sat_cap * dt
+                link.cap_credit = min(link.cap_credit + cap, max(1.0, cap))
             else:
                 link.cap_credit = 0.0
         if not self.in_intergreen and self.phases:
-            # movements competing for the same space downstream merge first come, first served
-            green = sorted((m for m in self.phases[self.phase] if m.queue), key=lambda m: m.queue[0].queued_at)
-            for m in self.phases[self.phase]:
-                if not m.queue:
+            waiting = []
+            for m, q in self._phase_queues[self.phase]:
+                if q:
+                    waiting.append(m)
+                else:
                     m.credit = 0.0
-            for m in green:
+            if len(waiting) > 1:   # movements competing for the same space merge first come, first served
+                waiting.sort(key=lambda m: m.queue[0].queued_at)
+            for m in waiting:
                 self._serve(m, now, dt)
-        # an emergency vehicle waiting at a red light crosses carefully after a while
-        for m in self.node.movements:
-            q = m.queue
-            if q and q[0].is_emergency and not self.is_green(m) and now - q[0].queued_at >= RED_CROSS_DELAY:
-                self._cross_vehicle(q.popleft(), m, now)
+        if self.ev_queued:   # an ambulance waiting at a red light crosses carefully after a while
+            for m in self.node.movements:
+                q = m.queue
+                if q and q[0].is_emergency and not self.is_green(m) and now - q[0].queued_at >= RED_CROSS_DELAY:
+                    self._cross_vehicle(q.popleft(), m, now)
 
     def _serve(self, m: Movement, now: float, dt: float) -> None:
         q = m.queue
@@ -183,6 +191,7 @@ class IntersectionAgent:
         self.sim.metrics.discharged(m.inbound, now - v.queued_at)
         self.released[m.outbound.id] = self.released.get(m.outbound.id, 0) + 1
         if v.is_emergency:
+            self.ev_queued -= 1
             self.ev_passed(v.id)
         v.cross(m.outbound, now)
 

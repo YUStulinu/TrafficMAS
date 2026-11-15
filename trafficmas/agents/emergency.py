@@ -57,6 +57,7 @@ class EmergencyVehicle(Vehicle):
 
     def join_queue(self, link: Link, nxt: Link) -> None:
         link.queues[nxt.id].appendleft(self)   # the others pull aside
+        self.sim.agents[link.v].ev_queued += 1
 
     # ------------------------------------------------------------------ corridor protocol
     def enter(self, link: Link, now: float, first: bool = False) -> None:
