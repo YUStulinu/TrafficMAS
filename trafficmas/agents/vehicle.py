@@ -48,6 +48,7 @@ class Vehicle:
         self.profile = profile
         compliance, self.min_gain = PROFILES[profile]
         self.compliant = rng.random() < compliance
+        self.rng = rng   # breaks ties between equally fast routes
         self.announces = self.compliant and sim.cfg["routing"].get("intentions", True)
         self.route: list[Link] = []
         self.idx = 0
@@ -76,7 +77,7 @@ class Vehicle:
     def plan(self, now: float) -> bool:
         # drivers who do not follow the congestion information drive their usual (free-flow) route
         weight = self.delay_weight if self.compliant else 0.0
-        res = self.sim.router.route_from_origin(self.origin, self.dest, now, self.speed_factor, weight)
+        res = self.sim.router.route_from_origin(self.origin, self.dest, now, self.speed_factor, weight, self.rng)
         if res is None:
             return False
         self.route = res[0]

@@ -4,6 +4,7 @@ from __future__ import annotations
 import heapq
 import itertools
 import math
+import random
 
 from trafficmas.contracts import Message
 from trafficmas.network.road import Link, RoadNetwork
@@ -141,14 +142,18 @@ class Router:
 
     # ------------------------------------------------------------------ search
     def route(self, starts: list[tuple[Link, float]], dest: str, speed_factor: float = 1.0,
-              delay_weight: float = 1.0, avoid: frozenset[str] = frozenset()) -> tuple[list[Link], float] | None:
+              delay_weight: float = 1.0, avoid: frozenset[str] = frozenset(),
+              rng: random.Random | None = None) -> tuple[list[Link], float] | None:
         """Best route from any of `starts` (link, time its end is reached) to node `dest`.
 
         Returns the list of links (starting with the chosen start link) and the
         predicted arrival time, or None if the destination cannot be reached.
+        Routes that are equally fast (to the microsecond) are told apart by `rng`, so
+        that drivers spread over them; without it the first one found wins.
         """
         rem = self.remaining(dest)
         counter = itertools.count()
+        tie = rng.random if rng is not None else float
         heap: list = []
         best: dict[str, float] = {}
         parent: dict[str, str | None] = {}
@@ -157,10 +162,10 @@ class Router:
             if h is not None and t_end < best.get(link.id, math.inf):
                 best[link.id] = t_end
                 parent[link.id] = None
-                heapq.heappush(heap, (t_end + h / speed_factor, next(counter), t_end, link))
+                heapq.heappush(heap, (round(t_end + h / speed_factor, 6), tie(), next(counter), t_end, link))
         links, next_links, cost = self.net.links, self.next_links, self.link_cost
         while heap:
-            _, _, t, link = heapq.heappop(heap)
+            _, _, _, t, link = heapq.heappop(heap)
             if t > best[link.id]:
                 continue
             if link.v == dest:
@@ -176,11 +181,11 @@ class Router:
                 if t2 < best.get(nxt.id, math.inf):
                     best[nxt.id] = t2
                     parent[nxt.id] = link.id
-                    heapq.heappush(heap, (t2 + h / speed_factor, next(counter), t2, nxt))
+                    heapq.heappush(heap, (round(t2 + h / speed_factor, 6), tie(), next(counter), t2, nxt))
         return None
 
     def route_from_origin(self, origin: str, dest: str, now: float, speed_factor: float = 1.0,
-                          delay_weight: float = 1.0):
+                          delay_weight: float = 1.0, rng: random.Random | None = None):
         starts = [(link, now + self.link_cost(link, now, speed_factor, delay_weight))
                   for link in self.net.out_links(origin) if not link.closed]
-        return self.route(starts, dest, speed_factor, delay_weight)
+        return self.route(starts, dest, speed_factor, delay_weight, rng=rng)

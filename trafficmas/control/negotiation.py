@@ -14,7 +14,8 @@ between neighbours:
   are about to be blocked, so the bid is a request to prevent spillback.
 
 Bids are paid with **credits**. Every agent earns credits at a fixed rate up to a
-cap, and an accepted bid costs its value. A neighbour that over-bids, for example
+cap, and an accepted bid costs its value. Credits offered in a bid are held until
+the answer arrives, so they cannot be offered to two neighbours at once. A neighbour that over-bids, for example
 a selfish one that inflates its urgency, runs out of credits and cannot dominate
 the others for long. This is the incentive mechanism measured in the selfish-agent
 experiment.
@@ -61,6 +62,9 @@ from trafficmas.control.base import BaseController, clearance_time, movement_pre
 
 if TYPE_CHECKING:
     from trafficmas.agents.intersection import IntersectionAgent
+
+
+PENDING_TIMEOUT = 30.0   # s after which an unanswered bid stops holding credits
 
 
 @dataclass
@@ -143,6 +147,7 @@ class NegotiationController(BaseController):
         self.bids_won = 0
         self.credits_spent = 0.0
         self.platoons_sent = 0
+        self.pending: dict[str, tuple[float, float]] = {}   # round -> (credits held for our bid, time sent)
 
     # ------------------------------------------------------------------ setup
     def _resolve_neighbours(self, agent: IntersectionAgent) -> None:
@@ -160,6 +165,8 @@ class NegotiationController(BaseController):
             self.credits = min(self.credit_cap, self.credits + self.credit_rate * dt)
         if self.platoons:
             self.platoons = [p for p in self.platoons if p.t_to >= now]
+        if self.pending:   # an answer that never came (lost message) frees the credits it held
+            self.pending = {c: v for c, v in self.pending.items() if now - v[1] < PENDING_TIMEOUT}
 
     def on_green_start(self, agent: IntersectionAgent, now: float) -> None:
         if self.commit:
@@ -331,10 +338,11 @@ class NegotiationController(BaseController):
             if u < self.urgency_threshold:
                 return   # no interest: refusing silently saves a message
             value = self.bid_scale * u
-            if self.use_credits:
-                value = min(self.credits, value)
+            if self.use_credits:   # credits already offered to another neighbour cannot be offered twice
+                value = min(self.credits - sum(v for v, _ in self.pending.values()), value)
             if value <= 0.0:
                 return
+            self.pending[msg.conversation] = (value, agent.sim.env.now)
             self.bids_sent += 1
             agent.send(msg.sender, "PROPOSE", TOPIC_BID,
                        {"round": msg.payload["round"], "link": msg.payload["link"], "value": value},
@@ -344,6 +352,8 @@ class NegotiationController(BaseController):
                 if self.round_open and msg.payload["round"] == self.round:
                     self.bids_received += 1
                     self.bids[msg.sender] = (msg.payload["link"], msg.payload["value"])
+            elif self.pending.pop(msg.conversation, None) is None:
+                pass   # answer to a bid whose hold already timed out: the credits were released
             elif msg.performative == "ACCEPT":
                 self.bids_won += 1
                 value = msg.payload["value"]

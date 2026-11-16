@@ -114,7 +114,7 @@ def test_astar_is_optimal_on_random_networks(seed):
             assert res is None
             continue
         path, arrival = res
-        assert arrival == pytest.approx(expected, abs=1e-6)
+        assert arrival == pytest.approx(expected, abs=1e-4)      # labels are compared to the microsecond
         assert path[0].u == origin and path[-1].v == dest
         assert not any(link.closed for link in path)
         for a, b in zip(path, path[1:], strict=False):
@@ -210,3 +210,18 @@ def test_board_ignores_late_and_out_of_order_announcements():
     board.retire("v1")
     announce(11.0, "late")                                 # arrives after the trip ended
     assert not board.plans and not board.announced
+
+
+def test_equally_fast_routes_are_shared_between_drivers():
+    """Without this, every uninformed driver takes the same one of many equal routes."""
+    net = build_grid(rows=4, cols=4)
+    router = Router(net, TrafficInfoBoard())
+    routes, times = set(), set()
+    for seed in range(40):
+        path, t = router.route_from_origin("W0", "N3", 0.0, rng=random.Random(seed))
+        routes.add(tuple(link.id for link in path))
+        times.add(round(t, 6))
+    assert len(times) == 1 and len(routes) >= 5        # same travel time, many different routes
+    first = router.route_from_origin("W0", "N3", 0.0, rng=random.Random(7))[0]
+    again = router.route_from_origin("W0", "N3", 0.0, rng=random.Random(7))[0]
+    assert first == again                              # and the choice is reproducible per driver
