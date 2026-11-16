@@ -125,11 +125,11 @@ Average time in the network, in seconds:
 
 | scenario | before | anticipation only | intentions only | **after** | change |
 |---|---:|---:|---:|---:|---:|
-| grid, off-peak | 91.3 | 90.6 | 91.2 | **90.3** | −1.1% (significant) |
-| grid, saturated | 161.8 | 161.8 | 158.5 | **158.5** | −2.0% (p = 0.03) |
-| grid, morning rush hour | 144.1 | 144.0 | 141.8 | **141.9** | −1.5% (not significant) |
-| grid, accident + closed street | 111.8 | 111.7 | 111.4 | **111.3** | −0.4% (not significant) |
-| Craiova city centre | 167.6 | 162.2 | 166.1 | **160.7** | −4.1% (significant) |
+| grid, off-peak | 91.3 | 90.6 | 91.2 | **90.5** | −0.9% (significant) |
+| grid, saturated | 161.8 | 162.0 | 158.5 | **158.4** | −2.1% (p = 0.02) |
+| grid, morning rush hour | 144.1 | 144.8 | 141.8 | **142.2** | −1.3% (not significant) |
+| grid, accident + closed street | 111.8 | 111.8 | 111.4 | **111.3** | −0.4% (not significant) |
+| Craiova city centre | 167.6 | 162.3 | 166.1 | **160.7** | −4.1% (significant) |
 
 The two mechanisms help in different places. Anticipation matters on the real network, where the junctions are irregular and the queues short; intention sharing matters on the saturated grid, where there are parallel routes to spread over.
 
@@ -137,10 +137,10 @@ Only about half of the drivers follow the traffic information in these scenarios
 
 | scenario | all informed, before | all informed, **after** | change |
 |---|---:|---:|---:|
-| grid, saturated | 172.9 | **148.6** | −14.1% (significant) |
-| grid, morning rush hour | 152.0 | **135.0** | −11.2% (significant) |
-| grid, accident + closed street | 111.1 | **105.4** | −5.1% (significant) |
-| Craiova city centre | 166.6 | **157.3** | −5.6% (significant) |
+| grid, saturated | 172.9 | **149.1** | −13.8% (significant) |
+| grid, morning rush hour | 152.0 | **135.1** | −11.1% (significant) |
+| grid, accident + closed street | 111.1 | **105.5** | −5.0% (significant) |
+| Craiova city centre | 166.6 | **157.6** | −5.4% (significant) |
 
 Without intention sharing, informing everybody made the saturated grid *slower* than the mixed fleet (172.9 s against 161.8 s): the drivers herd. With it, a fully informed fleet is the fastest configuration measured.
 
@@ -156,11 +156,11 @@ The price is communication. A route announcement is one message, which adds up t
 | actuated | 166.5 |
 | max-pressure | 167.6 |
 | negotiation, before | 162.5 |
-| **negotiation, after** | **157.3** |
-| after, without bids | 156.1 |
-| after, without the coordinator | 152.4 |
+| **negotiation, after** | **154.6** |
+| after, without bids | 155.0 |
+| after, without the coordinator | 152.8 |
 
-The upgraded controller is the fastest, but the run-to-run spread is large here (±9 s) and only its lead over fixed-time is significant. The hypothesis itself is not confirmed: even in this regime the bids change nothing, and the coordinator's directives do not help. The junction at the end of a full link can see that the link is full by itself, so a bid from its neighbour tells it nothing new. What neighbours can usefully exchange is information the other one cannot observe, which is what the route announcements of the vehicles do.
+The upgraded controller is 4.9% faster than the old one, but the run-to-run spread is large here (±8 s) and only its lead over fixed-time is significant. The hypothesis itself is not confirmed: even in this regime the bids change nothing, and the coordinator's directives do not help. The junction at the end of a full link can see that the link is full by itself, so a bid from its neighbour tells it nothing new. What neighbours can usefully exchange is information the other one cannot observe, which is what the route announcements of the vehicles do.
 
 ### The Craiova network in the live view
 
@@ -308,7 +308,7 @@ There are three driver profiles: conservative, normal and aggressive. A driver f
 ## Tests
 
 ```bash
-.venv/Scripts/python -m pytest -q        # 138 tests, about 1 minute
+.venv/Scripts/python -m pytest -q        # 143 tests, about 1.5 minutes
 .venv/Scripts/ruff check trafficmas tests scripts
 ```
 

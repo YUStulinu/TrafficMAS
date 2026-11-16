@@ -12,16 +12,16 @@ A grid with 80 m blocks at 14000 veh/h: links hold about 20 vehicles, so queues 
 | actuated | 166.5 ± 9.5 | 126.5 ± 9.5 | 12073 ± 1301 | 0.66 ± 0.03 | 26.0 ± 3.8 |
 | max_pressure | 167.6 ± 7.5 | 127.7 ± 7.5 | 11559 ± 971 | 0.71 ± 0.01 | 24.8 ± 2.9 |
 | before | 162.5 ± 8.6 | 122.4 ± 8.6 | 12778 ± 1975 | 0.72 ± 0.02 | 15.9 ± 0.2 |
-| **after** | 157.3 ± 10.3 | 117.5 ± 10.3 | 11208 ± 1789 | 0.70 ± 0.03 | 31.0 ± 3.8 |
-| after_no_bids | 156.1 ± 8.6 | 116.2 ± 8.6 | 11148 ± 1469 | 0.70 ± 0.02 | 26.8 ± 3.1 |
-| after_no_coordinator | 152.4 ± 7.9 | 112.6 ± 7.8 | 11081 ± 1639 | 0.75 ± 0.02 | 27.5 ± 2.9 |
+| **after** | 154.6 ± 8.2 | 114.8 ± 8.1 | 11100 ± 1458 | 0.71 ± 0.02 | 29.6 ± 2.8 |
+| after_no_bids | 155.0 ± 8.3 | 115.2 ± 8.3 | 11234 ± 1285 | 0.70 ± 0.02 | 26.0 ± 2.9 |
+| after_no_coordinator | 152.8 ± 7.8 | 113.0 ± 7.8 | 11152 ± 1194 | 0.73 ± 0.03 | 27.7 ± 2.9 |
 
 Tests against **after**: Mann-Whitney U, two-sided, Holm-corrected per metric; Kruskal-Wallis across all variants.
 
 | metric | Kruskal-Wallis p | vs fixed | vs actuated | vs max_pressure | vs before | vs after_no_bids | vs after_no_coordinator |
 |---|---:|---:|---:|---:|---:|---:|---:|
-| Avg. time in system (s) | 9.59e-06 | 0.0011 | 0.606 | 0.606 | 1 | 1 | 1 |
-| Avg. waiting time (s) | 1.01e-05 | 0.0011 | 0.606 | 0.606 | 1 | 1 | 1 |
-| Spillback (link-seconds) | 0.672 | 1 | 1 | 1 | 1 | 1 | 1 |
-| Fairness (Jain index) | 3.98e-07 | 0.00198 | 0.303 | 1 | 1 | 1 | 0.0566 |
-| Messages per agent per minute | 2.46e-08 | 0.00384 | 0.227 | 0.0845 | 0.0011 | 0.281 | 0.281 |
+| Avg. time in system (s) | 4.99e-06 | 0.0011 | 0.216 | 0.156 | 0.558 | 1 | 1 |
+| Avg. waiting time (s) | 4.82e-06 | 0.0011 | 0.216 | 0.129 | 0.637 | 1 | 1 |
+| Spillback (link-seconds) | 0.693 | 1 | 1 | 1 | 1 | 1 | 1 |
+| Fairness (Jain index) | 4.02e-06 | 0.00148 | 0.226 | 1 | 1 | 1 | 0.562 |
+| Messages per agent per minute | 2.34e-08 | 0.00123 | 0.312 | 0.125 | 0.0011 | 0.312 | 0.385 |
