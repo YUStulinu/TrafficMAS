@@ -19,7 +19,7 @@ The project plan is in [docs/TrafficMAS_Planul_Proiectului.pdf](docs/TrafficMAS_
 
 ## Results
 
-About 900 simulations, 10 seeds per configuration, each simulating one hour of traffic plus the time the network needs to empty. Numbers are means; the full tables with 95% confidence intervals and the tests are in `results/<experiment>/summary.md`. Every comparison uses a two-sided Mann-Whitney test with Holm correction; "significant" means p < 0.01.
+About 1270 simulations, 10 seeds per configuration, each simulating one hour of traffic plus the time the network needs to empty. Numbers are means; the full tables with 95% confidence intervals and the tests are in `results/<experiment>/summary.md`. Every comparison uses a two-sided Mann-Whitney test with Holm correction; "significant" means p < 0.01.
 
 ### 1. Negotiation against the classic controllers
 
@@ -27,11 +27,11 @@ Average time a vehicle spends in the network, in seconds (the queue at the gatew
 
 | scenario | fixed-time | actuated | max-pressure | **negotiation + coordinator** | vs. best baseline |
 |---|---:|---:|---:|---:|---:|
-| grid, off-peak | 123.3 | 92.8 | 114.0 | **91.6** | −1.3% (significant) |
-| grid, saturated | 173.3 | 167.9 | 164.9 | **160.1** | −2.9% (significant) |
-| grid, morning rush hour | 168.5 | 152.3 | 154.9 | **144.4** | −5.2% (significant) |
-| grid, accident + closed street | 144.8 | 126.2 | 131.6 | **115.3** | −8.6% (significant) |
-| Craiova city centre | 322.8 | **166.3** | 209.1 | 167.6 | +0.8% (not significant) |
+| grid, off-peak | 123.1 | 92.7 | 113.4 | **90.5** | −2.4% (significant) |
+| grid, saturated | 173.5 | 167.0 | 163.5 | **156.5** | −4.3% (significant) |
+| grid, morning rush hour | 169.2 | 151.1 | 152.7 | **141.6** | −6.2% (significant) |
+| grid, accident + closed street | 143.3 | 124.7 | 131.0 | **113.5** | −8.9% (significant) |
+| Craiova city centre | 322.7 | 165.1 | 207.9 | **160.7** | −2.7% (significant) |
 
 ![Average time in the network](docs/main_time_in_system.png)
 
@@ -39,11 +39,11 @@ Average time a vehicle spends in the network, in seconds (the queue at the gatew
 
 | scenario | fixed-time | actuated | max-pressure | negotiation + coordinator |
 |---|---:|---:|---:|---:|
-| grid, rush hour | 573 | 338 | 23 | **2** |
-| grid, accident | 1043 | 898 | 37 | **0** |
-| Craiova | 12055 | 472 | 2602 | **27** |
+| grid, rush hour | 978 | 419 | 45 | **0** |
+| grid, accident | 974 | 868 | 13 | **0** |
+| Craiova | 12048 | 491 | 2697 | **21** |
 
-In Craiova, actuated control is as fast on average as negotiation, but it lets links stay completely full about 17 times longer (p = 0.015).
+In Craiova, actuated control comes within 3% of negotiation on average, but it lets links stay completely full about 23 times longer.
 
 ![Spillback](docs/main_spillback.png)
 
@@ -51,22 +51,22 @@ The queues over the morning rush hour show the same picture: negotiation drains 
 
 ![Queues during the rush hour](docs/rush_hour_queues.png)
 
-**What it costs.** The negotiating junctions send 6–12 messages per agent per minute. The baselines send 5.6, all of them status reports and congestion broadcasts used for routing.
+**What it costs.** With negotiation the system exchanges 7 to 21 messages per agent per minute, against 7 to 15 with the classic controllers. The messages that every controller shares are the status reports, the congestion broadcasts and the route announcements of the drivers; the difference is the platoon notices and the bids.
 
-**Fairness** (Jain index of the waiting times per approach) is clearly better on the saturated grid: 0.82 against at most 0.75 for the baselines. It is slightly worse off-peak (0.93 vs. 0.96) and in the accident scenario (0.63 vs. 0.68 for max-pressure). The reason is that negotiation serves the busiest approaches first.
+**Fairness** (Jain index of the waiting times per approach) is clearly better on the saturated grid: 0.78 against at most 0.71 for the baselines. It is about the same off-peak (0.95 vs. 0.96) and lower in the accident scenario (0.65 vs. 0.71 for max-pressure). The reason is that negotiation serves the busiest approaches first.
 
 ### 2. Ambulances
 
 | | grid: response time (s) | grid: delay vs. free flow (s) | Craiova: response (s) | Craiova: delay (s) |
 |---|---:|---:|---:|---:|
-| negotiation, no priority | 81.7 | 24.4 | 112.4 | 18.3 |
-| negotiation, local pre-emption | 63.2 | 6.1 | 103.1 | 9.0 |
-| **negotiation, reserved corridor** | **62.4** | **5.2** | **103.5** | **9.4** |
-| fixed-time, reserved corridor | 63.9 | 4.9 | 112.2 | 13.2 |
+| negotiation, no priority | 81.7 | 24.7 | 112.1 | 18.3 |
+| negotiation, local pre-emption | 62.8 | 5.8 | 102.2 | 8.0 |
+| **negotiation, reserved corridor** | **61.8** | **4.7** | **102.8** | **8.8** |
+| fixed-time, reserved corridor | 63.5 | 4.8 | 112.1 | 12.9 |
 
-With a corridor, an ambulance loses 79% less time on the grid than without priority, and 48% less in Craiova. The reserved corridor and local pre-emption perform the same: the corridor is slightly ahead on the grid and slightly behind in Craiova, and neither difference is significant.
+With a corridor, an ambulance loses 81% less time on the grid than without priority, and 52% less in Craiova. The reserved corridor and local pre-emption perform the same: the corridor is slightly ahead on the grid and slightly behind in Craiova, and neither difference is significant.
 
-The clearer effect is on the **other vehicles**. Each run with ambulances is paired with the same run without them. Under fixed-time control, every ambulance with priority costs the rest of the traffic 5200–6200 vehicle-seconds on the grid. Under negotiation it costs 550–710, about 9× less, because the agents empty the queues that the ambulance left behind instead of going back to a fixed cycle. In Craiova the picture is noisier. Under negotiation an ambulance costs the others 170–680 vehicle-seconds, with confidence intervals of about ±560. Under fixed-time control, priority even *lowers* the total delay (by 3300–6900 vehicle-seconds), because interrupting the badly congested fixed cycle acts like a little adaptive control.
+The clearer effect is on the **other vehicles**. Each run with ambulances is paired with the same run without them. Under fixed-time control, every ambulance with priority costs the rest of the traffic 5000–5500 vehicle-seconds on the grid. Under negotiation it costs 500–760, about 7 to 10 times less, because the agents empty the queues that the ambulance left behind instead of going back to a fixed cycle. In Craiova the picture is noisier. Under negotiation the cost of an ambulance to the others cannot be told from zero (between −130 and +210 vehicle-seconds, with confidence intervals of about ±500). Under fixed-time control, priority even *lowers* the total delay (by 3700–6400 vehicle-seconds), because interrupting the badly congested fixed cycle acts like a little adaptive control.
 
 In the conflict scenario, two ambulances reach junction n1_2 at the same moment. The one with the higher priority keeps its slot; the other is refused and re-plans its route.
 
@@ -76,38 +76,38 @@ In the conflict scenario, two ambulances reach junction n1_2 at the same moment.
 
 | removed mechanism | grid saturated | grid rush hour | grid accident | Craiova |
 |---|---:|---:|---:|---:|
-| none (full controller) | 160.1 | 144.4 | 115.3 | 167.6 |
-| zone coordinator | 160.1 | 144.4 | 115.4 | 167.5 |
-| Contract Net bids | 160.3 | 144.3 | 115.2 | 167.6 |
-| credits | 160.1 | 144.4 | 115.3 | 167.6 |
-| platoon messages | 160.3 | 144.5 | 115.8 | 167.4 |
-| **commitment to the current phase** | **437.7** | **289.0** | **140.5** | **177.7** |
+| none (full controller) | 156.5 | 141.6 | 113.5 | 160.7 |
+| zone coordinator | 156.4 | 141.5 | 113.5 | 160.7 |
+| Contract Net bids | 156.6 | 141.6 | 113.5 | 160.7 |
+| credits | 156.5 | 141.6 | 113.5 | 160.7 |
+| platoon messages | 156.8 | 141.6 | 114.0 | 160.6 |
+| **commitment to the current phase** | **500.1** | **341.0** | **150.4** | **211.9** |
 
 The result is unambiguous: **almost all of the gain comes from the BDI commitment** together with the pressure scoring. Without the commitment, the agents reconsider their phase every few seconds and lose a 4 s intergreen each time. Under saturation the grid then collapses into spillback.
 
-The Contract Net, the credits, the coordinator and the platoons change the result by less than 0.5%, and none of these differences is significant. The reason is that they only act when a link is close to full, and the controller already keeps links from filling up: a whole hour of saturated traffic triggers only about 60 bids in the entire network. Raising the bid weight 4–8× changes nothing either.
+The Contract Net, the credits, the coordinator and the platoons change the result by less than 0.5%, and none of these differences is significant. The reason is that they only act when a link is close to full, and the controller already keeps links from filling up: a whole hour of saturated traffic triggers only about 55 accepted bids in the entire network. Raising the bid weight 4–8× changes nothing either.
 
-So in these scenarios the negotiation layer is a safety net that is almost never needed. A network with much shorter links, where spillback cannot be avoided locally, would be needed to see it work.
+So in these scenarios the negotiation layer is a safety net that is almost never needed. Section 7 tests it on a network with much shorter links, where spillback cannot be avoided locally.
 
 ![Ablation](docs/ablation_time_in_system.png)
 
 ### 4. Unreliable communication
 
-Even 3 s of message latency or 50% of messages lost cost negotiation at most 0.8% on the rush hour (144.4 → 145.6 s). It still stays well ahead of max-pressure, which needs no messages at all (154.9 s). In Craiova the ambulance arrives 3 s later when half the messages are lost (103.5 → 106.8 s). The agents degrade gracefully because every one of them can always fall back on its local pressure.
+Even 3 s of message latency or 50% of messages lost cost negotiation at most 0.6% on the rush hour (141.6 → 142.4 s). It still stays well ahead of max-pressure, which needs no messages at all (152.7 s). In Craiova the ambulance arrives just as fast when half the messages are lost (102.8 s and 102.4 s), because a junction's own sensor covers for a reservation that never arrived. The agents degrade gracefully because every one of them can always fall back on its local pressure.
 
 ![Robustness](docs/robustness_time_in_system.png)
 
 ### 5. A selfish junction
 
-Junction n1_1 multiplies all of its bids by 5. Its share of the won bids rises from 31% to 35% with credits and to 36% without them. Waiting times, its own and everybody else's, do not change measurably. This is the same reason as in the ablation: bids almost never decide a phase in these scenarios. So the credit mechanism works as designed (the cheater cannot bid more than it can pay), but these scenarios cannot show that it matters.
+Junction n1_1 multiplies all of its bids by 5. Its share of the won bids rises from 39% to 44% with credits and to 45% without them. Waiting times, its own and everybody else's, do not change measurably. This is the same reason as in the ablation: bids almost never decide a phase in these scenarios. So the credit mechanism works as designed (the cheater cannot bid more than it can pay), but these scenarios cannot show that it matters.
 
 ### 6. Braess's paradox
 
 | network | avg. time in the network |
 |---|---:|
-| without the shortcut A→B | 209 s |
-| with the shortcut, drivers informed and selfish | 447 s (+114%) |
-| with the shortcut, uninformed drivers on the free-flow shortest route | 683 s (+226%) |
+| without the shortcut A→B | 178 s |
+| with the shortcut, drivers informed and selfish | 287 s (+61%) |
+| with the shortcut, uninformed drivers on the free-flow shortest route | 663 s (+273%) |
 
 Adding a road makes every driver slower. Selfish drivers who follow the congestion information lose less than drivers who all take the nominally shortest route, but both lose a lot compared to the network without the shortcut. This is the price of anarchy of selfish routing.
 
