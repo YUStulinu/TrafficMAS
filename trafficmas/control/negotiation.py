@@ -30,6 +30,16 @@ The agent's architecture is a simplified BDI loop:
   better (hysteresis). Every switch costs an intergreen of lost time, so an agent
   that reconsiders too often loses capacity exactly when traffic is heaviest.
 
+**Anticipation.** Pressure compares queues, which says little when queues are
+short. Once its commitment is over, the agent therefore also compares what every
+phase would actually *serve*: its queue plus the vehicles that reach the stop line
+before the queue is cleared, per second of green, with the intergreen charged to
+the phases that are not green yet (the priority index of Laemmer and Helbing,
+2008). It switches when another phase would serve clearly more per second. A
+phase that is discharging at saturation flow always wins this comparison, so the
+rule only acts when the current green is running thin, which is where the
+pressure rule wastes time.
+
 **Platoons.** When a green ends, the agent tells each signalised downstream
 neighbour how many vehicles it just released towards it and when they will
 arrive. The neighbour adds the expected arrivals to the score of the phase that
@@ -45,6 +55,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import TYPE_CHECKING
 
+from trafficmas.agents.intersection import INTERGREEN
 from trafficmas.contracts import TOPIC_BID, TOPIC_CFP, TOPIC_PLATOON, Message
 from trafficmas.control.base import BaseController, clearance_time, movement_pressure
 
@@ -72,6 +83,7 @@ class NegotiationController(BaseController):
     def __init__(self, min_green: float = 5.0, max_green: float = 60.0, max_red: float = 90.0,
                  hysteresis: float = 1.0, commit: bool = True, max_commit: float = 40.0,
                  arrival_weight: float = 1.0, arrival_horizon: float = 4.0,
+                 anticipate: bool = True, anticipation_margin: float = 1.2, gap: float = 2.0,
                  # Contract Net
                  use_bids: bool = True, cfp_interval: float = 4.0, cfp_lead: float = 2.0, bid_weight: float = 0.4,
                  urgency_threshold: float = 0.5, bid_scale: float = 4.0, invite_threshold: float = 0.5,
@@ -94,6 +106,9 @@ class NegotiationController(BaseController):
         self.arrival_horizon = arrival_horizon
         self.max_commit = max_commit
         self.commit_until = 0.0
+        self.anticipate = anticipate
+        self.anticipation_margin = anticipation_margin
+        self.gap = gap
         self.use_bids = use_bids
         self.cfp_interval = cfp_interval
         self.cfp_lead = cfp_lead
@@ -227,7 +242,44 @@ class NegotiationController(BaseController):
         best = max(range(n), key=lambda p: (scores[p], p == cur))
         if best != cur and scores[best] > scores[cur] + self.hysteresis:
             return self._switch(agent, best)
+        if self.anticipate:
+            rates = [self.service_rate(agent, p, now, 0.0 if p == cur else INTERGREEN) for p in range(n)]
+            best = max(range(n), key=lambda p: (rates[p], p == cur))
+            if best != cur and rates[best] > self.anticipation_margin * rates[cur]:
+                return self._switch(agent, best)
         return None
+
+    def service_rate(self, agent: IntersectionAgent, p: int, now: float, setup: float) -> float:
+        """Vehicles per second phase `p` would serve if its green started in `setup` seconds.
+
+        Counts the queues (as far as the downstream links have room) and then every
+        vehicle that reaches the stop line before the ones ahead of it are cleared, with
+        at most `gap` seconds of idle green in between.
+        """
+        waiting: dict[str, int] = {}
+        for m in agent.phases[p]:
+            q = len(m.queue)
+            if q:
+                out = m.outbound
+                if out.queues:
+                    q = min(q, max(0, out.storage - out.occupancy))
+                waiting[m.inbound.id] = waiting.get(m.inbound.id, 0) + q
+        links = agent.sim.net.links
+        served, green = 0, 0.0
+        for lid in agent.phase_links[p]:
+            link = links[lid]
+            cap = max(1e-6, link.sat_cap)
+            k = waiting.get(lid, 0)
+            g = k / cap
+            for v in link.travellers.values():   # in order of entry, so in order of arrival
+                eta = v.stopline_at - now
+                if eta > setup + g + self.gap or g >= self.max_commit:
+                    break
+                k += 1
+                g = max(g + 1.0 / cap, eta - setup)
+            served += k
+            green = max(green, g)
+        return served / (setup + max(green, 1.0)) if served else 0.0
 
     def _switch(self, agent: IntersectionAgent, p: int) -> int:
         self._settle(agent, p)

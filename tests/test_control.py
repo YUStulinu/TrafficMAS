@@ -218,6 +218,49 @@ def test_registry_rejects_unknown_controller():
         make_controller("does_not_exist")
 
 
+class Arriving(Dummy):
+    """A vehicle driving towards the stop line, due there at `stopline_at`."""
+
+    def __init__(self, vid, stopline_at):
+        super().__init__(vid)
+        self.stopline_at = stopline_at
+
+
+def test_anticipation_serves_a_single_waiting_vehicle_when_the_green_is_idle():
+    for anticipate, expected in ((True, 1), (False, None)):
+        sim = make_sim("negotiation", {"anticipate": anticipate})
+        agent = sim.agents["n0_0"]
+        fill(movement(agent, phase=1), 1)                      # pressure 1.0 does not beat the hysteresis
+        assert agent.controller.decide(agent, 20.0) == expected
+
+
+def test_anticipation_keeps_the_green_for_a_platoon_about_to_arrive():
+    sim = make_sim("negotiation")
+    agent = sim.agents["n0_0"]
+    ctrl = agent.controller
+    fill(movement(agent, phase=1), 1)
+    link = movement(agent, phase=0).inbound
+    for i in range(4):                                         # four vehicles 1-4 s from the green stop line
+        link.travellers[f"p{i}"] = Arriving(f"p{i}", 20.0 + 1 + i)
+    assert ctrl.service_rate(agent, 0, 20.0, 0.0) == pytest.approx(4 / 4.0)
+    assert ctrl.service_rate(agent, 1, 20.0, INTERGREEN) == pytest.approx(1 / (INTERGREEN + 1.0))
+    assert ctrl.decide(agent, 20.0) is None
+
+
+def test_service_rate_ignores_vehicles_the_downstream_link_cannot_take():
+    sim = make_sim("negotiation")
+    agent = sim.agents["n0_0"]
+    m = next(mv for mv in agent.phases[1] if mv.outbound.queues)   # leads to another junction, not a gateway
+    fill(m, 6)
+    full = agent.controller.service_rate(agent, 1, 0.0, INTERGREEN)
+    occupy(m.outbound, m.outbound.storage - 2)
+    assert agent.controller.service_rate(agent, 1, 0.0, INTERGREEN) < full
+    occupy_all = m.outbound.storage - m.outbound.occupancy
+    for i in range(occupy_all):
+        m.outbound.travellers[f"z{i}"] = Arriving(f"z{i}", 1e9)
+    assert agent.controller.service_rate(agent, 1, 0.0, INTERGREEN) == 0.0
+
+
 # ---------------------------------------------------------------------------------------------
 # Whole-run invariants on a saturated grid with short blocks (spillback, hundreds of bids).
 
