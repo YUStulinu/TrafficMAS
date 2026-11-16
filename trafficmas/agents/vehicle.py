@@ -188,5 +188,5 @@ class Vehicle:
 
     def finish(self, now: float) -> None:
         self.done = True
-        self.sim.board.release(self.id)
+        self.sim.board.retire(self.id)
         self.sim.metrics.vehicle_done(self, now)

@@ -34,6 +34,7 @@ class TrafficInfoBoard:
         self.version = 0
         self.announced: dict[tuple[str, int], int] = {}        # (link id, slot) -> vehicles
         self.plans: dict[str, list[tuple[str, int]]] = {}      # vehicle id -> its (link id, slot) entries
+        self.latest: dict[str, float] = {}                     # vehicle id -> send time of its newest plan
 
     def publish(self, delays: dict[str, float], now: float) -> None:
         self.delay.update(delays)
@@ -42,7 +43,9 @@ class TrafficInfoBoard:
         self.version += 1
 
     def on_message(self, msg: Message) -> None:
-        self.book(msg.sender, msg.payload["plan"])
+        if msg.sent_at >= self.latest.get(msg.sender, -math.inf):   # ignore plans that arrive out of order
+            self.latest[msg.sender] = msg.sent_at
+            self.book(msg.sender, msg.payload["plan"])
 
     def book(self, vid: str, plan: list[tuple[str, float]]) -> None:
         """Replace the announced plan of a vehicle: (link id, time it reaches the end of the link)."""
@@ -54,8 +57,17 @@ class TrafficInfoBoard:
         self.plans[vid] = entries
 
     def release(self, vid: str) -> None:
+        announced = self.announced
         for key in self.plans.pop(vid, ()):
-            self.announced[key] -= 1
+            if announced[key] > 1:
+                announced[key] -= 1
+            else:
+                del announced[key]
+
+    def retire(self, vid: str) -> None:
+        """The vehicle has arrived: withdraw its plan and ignore announcements still on their way."""
+        self.release(vid)
+        self.latest[vid] = math.inf
 
 
 class Router:

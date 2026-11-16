@@ -193,3 +193,20 @@ def test_announced_vehicles_make_a_link_more_expensive(grid):
     board.release("a")
     board.release("b")
     assert router.link_cost(link, 100.0) == pytest.approx(base)
+
+
+def test_board_ignores_late_and_out_of_order_announcements():
+    from trafficmas.contracts import Message
+    board = TrafficInfoBoard()
+
+    def announce(sent_at, link):
+        msg = Message("v1", board.id, "INFORM", "intention", {"plan": [(link, 100.0)]})
+        msg.sent_at = sent_at
+        board.on_message(msg)
+
+    announce(10.0, "new")
+    announce(5.0, "old")                                   # delayed on the bus: must not replace the newer plan
+    assert board.plans["v1"] == [("new", int(100.0 // SLOT))]
+    board.retire("v1")
+    announce(11.0, "late")                                 # arrives after the trip ended
+    assert not board.plans and not board.announced

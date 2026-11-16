@@ -13,8 +13,8 @@ Three modes are compared:
   ambulance arrives. ETAs are refreshed while driving, the slot is released once
   the ambulance has crossed, and conflicting requests are settled by priority. A
   rejected ambulance tries to re-plan around the intersection that refused it.
-  If a reservation is never confirmed because messages were lost, the junction's
-  own sensor still detects the ambulance on the approach, as in ``preemption``.
+  If the junction holds no reservation when the ambulance reaches its approach,
+  because messages were lost, its own sensor still detects it, as in ``preemption``.
 
 Vehicles have to pull aside on a crowded link, so the ambulance drives slower the
 fuller the link is. This is why emptying the approach early pays off.
@@ -47,7 +47,7 @@ class EmergencyVehicle(Vehicle):
         self.priority = priority
         self.mode = mode
         self.reserved: dict[str, float] = {}   # node id -> eta of the accepted reservation
-        self.requested: set[str] = set()
+        self.requested: dict[str, float] = {}  # node id -> eta of the latest request sent to it
         self.refused: set[str] = set()         # junctions that gave the slot to another ambulance
         self.rejections = 0
         sim.bus.register(self)
@@ -95,7 +95,7 @@ class EmergencyVehicle(Vehicle):
     def request_corridor(self, now: float, start: int) -> None:
         for in_link, out_link, eta in self._etas(now, start):
             node = in_link.v
-            self.requested.add(node)
+            self.requested[node] = eta
             self.sim.bus.send(Message(self.id, node, "REQUEST", TOPIC_CORRIDOR,
                                       {"in_link": in_link.id, "out_link": out_link.id, "eta": eta,
                                        "priority": self.priority}, conversation=self.id))
@@ -104,6 +104,8 @@ class EmergencyVehicle(Vehicle):
         if msg.topic != TOPIC_CORRIDOR or self.done:
             return
         node = msg.payload["node"]
+        if "eta" in msg.payload and msg.payload["eta"] != self.requested.get(node):
+            return   # the answer to an older request that has been replaced since
         if msg.performative == "ACCEPT":
             self.reserved[node] = msg.payload["eta"]
             return
@@ -140,10 +142,9 @@ class EmergencyVehicle(Vehicle):
         if self.idx + 1 >= len(self.route):
             return
         nxt = self.route[self.idx + 1]
-        # In corridor mode the junction's own sensor is the fallback when the reservation was
-        # never confirmed (lost messages), unless the junction refused it for another ambulance.
-        unconfirmed = self.mode == "corridor" and link.v not in self.reserved and link.v not in self.refused
-        if self.mode == "preemption" or unconfirmed:
+        # In corridor mode the junction's own sensor is the fallback when the junction holds no
+        # reservation (lost messages, or one that expired), unless it refused this ambulance.
+        if self.mode == "preemption" or (self.mode == "corridor" and link.v not in self.refused):
             agent = self.sim.agents.get(link.v)
             if agent is not None and agent.signalized:
                 agent.ev_detected(self, link, nxt, self.stopline_at)

@@ -73,6 +73,9 @@ class IntersectionAgent:
         # the queue objects never change, so the hot loop below can hold on to them
         self._in_queues = [(link, list(link.queues.values())) for link in self.in_links]
         self._phase_queues = [[(m, m.queue) for m in ph] for ph in self.phases]
+        # approaches served by more than one phase (protected left turns)
+        self.shared_links = {lid for i, a in enumerate(self.phase_links) for lid in a
+                             if any(lid in b for b in self.phase_links[i + 1:])}
 
     # ------------------------------------------------------------------ state
     @property
@@ -222,8 +225,8 @@ class IntersectionAgent:
     def ev_detected(self, ev, in_link: Link, out_link: Link, eta: float) -> None:
         """Local pre-emption: a sensor on the approach sees the emergency vehicle."""
         phase = self.node.phase_of.get((in_link.id, out_link.id))
-        if phase is None or not self.signalized:
-            return
+        if phase is None or not self.signalized or ev.id in self.reservations:
+            return   # nothing to switch, or the ambulance already holds a reserved slot here
         for other in self.reservations.values():
             if other.phase != phase and other.priority > ev.priority:
                 return
@@ -247,7 +250,8 @@ class IntersectionAgent:
         if any(r.priority >= new.priority for r in conflicts):
             self.sim.metrics.corridor_conflicts += 1
             self.reservations.pop(new.ev_id, None)   # a refused ambulance holds nothing here, not even a sensor hit
-            self.send(msg.sender, "REJECT", TOPIC_CORRIDOR, {"node": self.id, "reason": "conflict"}, msg.conversation)
+            self.send(msg.sender, "REJECT", TOPIC_CORRIDOR, {"node": self.id, "reason": "conflict", "eta": new.eta},
+                      msg.conversation)
             return
         for r in conflicts:   # lower-priority reservations are displaced
             self.sim.metrics.corridor_conflicts += 1

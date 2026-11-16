@@ -261,6 +261,46 @@ def test_service_rate_ignores_vehicles_the_downstream_link_cannot_take():
     assert agent.controller.service_rate(agent, 1, 0.0, INTERGREEN) == 0.0
 
 
+def test_service_rate_is_zero_into_a_closed_link():
+    sim = make_sim("negotiation")
+    agent = sim.agents["n0_0"]
+    m = movement(agent, phase=1)
+    fill(m, 5)
+    assert agent.controller.service_rate(agent, 1, 0.0, INTERGREEN) > 0
+    m.outbound.closed = True
+    assert agent.controller.service_rate(agent, 1, 0.0, INTERGREEN) == 0.0
+
+
+def test_service_rate_counts_arrivals_only_for_the_phase_that_serves_their_turn():
+    sim = make_sim("negotiation", network={"type": "grid", "rows": 3, "cols": 3, "left_turn_phases": True})
+    agent = sim.agents["n1_1"]
+    assert len(agent.phases) == 4 and agent.shared_links
+    left_phase = next(p for p, ph in enumerate(agent.phases) if all(m.turn == "left" for m in ph))
+    left = agent.phases[left_phase][0]
+    main_phase = next(p for p, ph in enumerate(agent.phases)
+                      if p != left_phase and any(m.inbound is left.inbound for m in ph))
+    through = next(m for m in agent.phases[main_phase] if m.inbound is left.inbound and m.turn == "through")
+    for i, m in enumerate([left, through, through]):            # one car turning left, two going straight
+        v = Arriving(f"a{i}", 1.0 + i)
+        v.route, v.idx = [m.inbound, m.outbound], 0
+        m.inbound.travellers[v.id] = v
+    ctrl = agent.controller
+    assert ctrl.service_rate(agent, left_phase, 0.0, 0.0) == pytest.approx(1 / 1.0)
+    assert ctrl.service_rate(agent, main_phase, 0.0, 0.0) == pytest.approx(2 / 3.0)
+
+
+def test_sensor_does_not_replace_a_reserved_slot():
+    sim = make_sim("fixed")
+    agent = sim.agents["n0_0"]
+    agent.send = lambda *a, **k: None
+    b = movement(agent, phase=1)
+    agent.on_message(corridor_request("ev1", b.inbound.id, b.outbound.id, 50.0, 1))
+    ev = Dummy("ev1")
+    ev.priority = 1
+    agent.ev_detected(ev, b.inbound, b.outbound, 12.0)
+    assert not agent.reservations["ev1"].local and agent.reservations["ev1"].eta == 50.0
+
+
 # ---------------------------------------------------------------------------------------------
 # Whole-run invariants on a saturated grid with short blocks (spillback, hundreds of bids).
 

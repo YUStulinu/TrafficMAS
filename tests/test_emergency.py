@@ -131,3 +131,16 @@ def test_no_trip_is_faster_than_free_flow():
     sim.run()
     assert len(sim.metrics.trips) > 1000
     assert min(t["delay"] for t in sim.metrics.trips) > -1e-6
+
+
+def test_ambulance_ignores_the_answer_to_a_request_it_has_replaced():
+    from trafficmas.contracts import Message
+    sim = busy("corridor", rate=0)
+    ev = sim.spawn_emergency("evx", "W0", "E0", 1)
+    ev.requested["n0_1"] = 80.0                               # latest request to n0_1 announced ETA 80
+    ev.try_detour = lambda node: None
+    ev.on_message(Message("n0_1", ev.id, "ACCEPT", "corridor", {"node": "n0_1", "eta": 80.0}))
+    ev.on_message(Message("n0_1", ev.id, "REJECT", "corridor", {"node": "n0_1", "reason": "conflict", "eta": 60.0}))
+    assert "n0_1" in ev.reserved and "n0_1" not in ev.refused and ev.rejections == 0
+    ev.on_message(Message("n0_1", ev.id, "REJECT", "corridor", {"node": "n0_1", "reason": "displaced"}))
+    assert "n0_1" not in ev.reserved and "n0_1" in ev.refused and ev.rejections == 1

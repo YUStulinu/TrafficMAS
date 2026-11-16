@@ -252,29 +252,39 @@ class NegotiationController(BaseController):
     def service_rate(self, agent: IntersectionAgent, p: int, now: float, setup: float) -> float:
         """Vehicles per second phase `p` would serve if its green started in `setup` seconds.
 
-        Counts the queues (as far as the downstream links have room) and then every
-        vehicle that reaches the stop line before the ones ahead of it are cleared, with
-        at most `gap` seconds of idle green in between.
+        Counts the queues (as far as the downstream links are open and have room) and
+        then every vehicle that reaches the stop line before the ones ahead of it are
+        cleared, with at most `gap` seconds of idle green in between.
         """
         waiting: dict[str, int] = {}
+        need: dict[str, float] = {}       # green needed by the slowest movement of each approach
         for m in agent.phases[p]:
             q = len(m.queue)
             if q:
                 out = m.outbound
-                if out.queues:
-                    q = min(q, max(0, out.storage - out.occupancy))
-                waiting[m.inbound.id] = waiting.get(m.inbound.id, 0) + q
+                q = 0 if out.closed else min(q, max(0, out.storage - out.occupancy))
+                if q:
+                    lid = m.inbound.id
+                    waiting[lid] = waiting.get(lid, 0) + q
+                    need[lid] = max(need.get(lid, 0.0), q / max(1e-6, m.sat_rate * m.inbound.capacity_factor))
         links = agent.sim.net.links
+        phase_of = agent.node.phase_of
         served, green = 0, 0.0
         for lid in agent.phase_links[p]:
             link = links[lid]
             cap = max(1e-6, link.sat_cap)
             k = waiting.get(lid, 0)
-            g = k / cap
-            for v in link.travellers.values():   # in order of entry, so in order of arrival
+            g = max(k / cap, need.get(lid, 0.0))
+            shared = lid in agent.shared_links
+            # In order of entry, which is the order of arrival (an overtaking ambulance is ignored).
+            for v in link.travellers.values():
                 eta = v.stopline_at - now
                 if eta > setup + g + self.gap or g >= self.max_commit:
                     break
+                if shared:   # the approach is split between phases: count only the vehicles turning with this one
+                    nxt = v.route[v.idx + 1:v.idx + 2]
+                    if not nxt or phase_of.get((lid, nxt[0].id)) != p:
+                        continue
                 k += 1
                 g = max(g + 1.0 / cap, eta - setup)
             served += k
