@@ -1,0 +1,62 @@
+name: upgrade
+description: 'The upgrade of parts 2 and 3, one mechanism at a time. "before" switches
+  both new mechanisms off: the anticipation rule of the negotiating junctions and
+  the intention sharing of informed drivers. The last two variants repeat the comparison
+  for a fleet in which every driver follows the traffic information.
+
+  '
+seeds: 10
+reference: after
+scenarios:
+- scenarios/grid_light.yaml
+- scenarios/grid_heavy.yaml
+- scenarios/grid_rush_hour.yaml
+- scenarios/grid_incident.yaml
+- scenarios/craiova_center.yaml
+variants:
+- label: before
+  controller: negotiation_coord
+  params:
+    anticipate: false
+  overrides:
+    routing:
+      intentions: false
+- label: anticipation_only
+  controller: negotiation_coord
+  overrides:
+    routing:
+      intentions: false
+- label: intentions_only
+  controller: negotiation_coord
+  params:
+    anticipate: false
+- label: after
+  controller: negotiation_coord
+- label: all_informed_before
+  controller: negotiation_coord
+  params:
+    anticipate: false
+  overrides:
+    routing:
+      intentions: false
+    demand:
+      driver_profiles:
+        aggressive: 1.0
+- label: all_informed_after
+  controller: negotiation_coord
+  overrides:
+    demand:
+      driver_profiles:
+        aggressive: 1.0
+metrics:
+- avg_time_in_system
+- avg_wait_time
+- avg_queue
+- spillback_link_s
+- jain_fairness
+- avg_reroutes
+- messages_per_agent_min
+figures:
+- metric: avg_time_in_system
+  file: upgrade/time_in_system.png
+  title: Upgrade of parts 2 and 3 - average time in the network (lower is better)

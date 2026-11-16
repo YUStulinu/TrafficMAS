@@ -246,6 +246,7 @@ class IntersectionAgent:
                      if r.ev_id != new.ev_id and r.phase != phase and self._overlaps(r, new)]
         if any(r.priority >= new.priority for r in conflicts):
             self.sim.metrics.corridor_conflicts += 1
+            self.reservations.pop(new.ev_id, None)   # a refused ambulance holds nothing here, not even a sensor hit
             self.send(msg.sender, "REJECT", TOPIC_CORRIDOR, {"node": self.id, "reason": "conflict"}, msg.conversation)
             return
         for r in conflicts:   # lower-priority reservations are displaced
