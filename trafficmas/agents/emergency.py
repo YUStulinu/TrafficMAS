@@ -41,6 +41,7 @@ class EmergencyVehicle(Vehicle):
     def __init__(self, sim: Simulation, vid: str, origin: str, dest: str, priority: int, mode: str, rng) -> None:
         super().__init__(sim, vid, origin, dest, "aggressive", rng)
         self.compliant = True   # always plans with the congestion information (see enter below)
+        self.announces = False  # its route is reserved with the junctions instead
         self.priority = priority
         self.mode = mode
         self.reserved: dict[str, float] = {}   # node id -> eta of the accepted reservation

@@ -1,20 +1,39 @@
-"""Time-dependent A* routing on links, fed by the congestion information board."""
+"""Time-dependent A* routing on links, fed by the traffic information board."""
 from __future__ import annotations
 
 import heapq
 import itertools
 import math
 
+from trafficmas.contracts import Message
 from trafficmas.network.road import Link, RoadNetwork
+
+SLOT = 30.0             # s, resolution of the announced intentions
+AHEAD = 0.5             # share of the vehicles announced for a slot that arrive before a given one
+MIN_SERVICE_RATE = 0.05  # veh/s, floor for the discharge rate of a link
 
 
 class TrafficInfoBoard:
-    """What vehicles know about congestion: the last delay estimates broadcast by the coordinators."""
+    """What vehicles know about traffic.
+
+    * **Reported delays**: the last queueing delay per link broadcast by the coordinators.
+      They describe the present.
+    * **Announced intentions**: informed vehicles tell the board which links they plan to
+      use and when (see `Vehicle.announce`). The board counts them per link and 30 s slot.
+      They describe the future, and they are what keeps informed drivers from all
+      switching to the same alternative route at once.
+
+    The board is addressed on the message bus as `intentions`.
+    """
+
+    id = "intentions"
 
     def __init__(self) -> None:
         self.delay: dict[str, float] = {}
         self.updated: dict[str, float] = {}
         self.version = 0
+        self.announced: dict[tuple[str, int], int] = {}        # (link id, slot) -> vehicles
+        self.plans: dict[str, list[tuple[str, int]]] = {}      # vehicle id -> its (link id, slot) entries
 
     def publish(self, delays: dict[str, float], now: float) -> None:
         self.delay.update(delays)
@@ -22,25 +41,57 @@ class TrafficInfoBoard:
             self.updated[lid] = now
         self.version += 1
 
+    def on_message(self, msg: Message) -> None:
+        self.book(msg.sender, msg.payload["plan"])
+
+    def book(self, vid: str, plan: list[tuple[str, float]]) -> None:
+        """Replace the announced plan of a vehicle: (link id, time it reaches the end of the link)."""
+        self.release(vid)
+        entries = [(lid, int(t // SLOT)) for lid, t in plan]
+        announced = self.announced
+        for key in entries:
+            announced[key] = announced.get(key, 0) + 1
+        self.plans[vid] = entries
+
+    def release(self, vid: str) -> None:
+        for key in self.plans.pop(vid, ()):
+            self.announced[key] -= 1
+
 
 class Router:
     """A* over links, so turn restrictions (no U-turns) are respected.
 
-    The cost of a link is its free-flow time plus the queueing delay last reported
-    for it. The reported delay is a snapshot, so it is assumed to fade linearly back
-    to zero over `horizon` seconds: a link that is congested now counts fully if the
-    vehicle reaches it soon and less if it reaches it in ten minutes. This makes the
-    search time-dependent: the cost of a link depends on the time it is entered.
+    The cost of a link entered at time t is its free-flow time plus the expected delay
+    at its stop line, which has two parts:
+
+    * the delay last reported for the link. It is a snapshot, so it fades linearly to
+      zero over `horizon` seconds: a queue seen now matters less to a vehicle that will
+      only get there in ten minutes;
+    * the time to serve the vehicles that announced the same link for the same 30 s
+      slot and are expected to arrive first (half of them, on average).
+
+    The search labels links with arrival times, so costs may depend on the time of
+    entry. The heuristic is the exact free-flow time from each link to the destination
+    (one reverse Dijkstra per destination, cached). It never overestimates, whatever the
+    geometry of the network, and with no congestion the search walks straight down the
+    best route.
     """
 
     def __init__(self, net: RoadNetwork, board: TrafficInfoBoard, horizon: float = 600.0) -> None:
         self.net = net
         self.board = board
         self.horizon = horizon
-        self.vmax = net.max_speed()
         self.next_links: dict[str, list[Link]] = {
             lid: [m.outbound for m in net.movements_from(link)] for lid, link in net.links.items()}
+        self.prev_links: dict[str, list[Link]] = {lid: [] for lid in net.links}
+        for lid, nexts in self.next_links.items():
+            for nxt in nexts:
+                self.prev_links[nxt.id].append(net.links[lid])
+        # share of the time a link is served: one phase out of the junction's phases
+        self.green_share = {lid: 1.0 / max(1, len(net.nodes[link.v].phases)) for lid, link in net.links.items()}
+        self._remaining: dict[str, dict[str, float]] = {}
 
+    # ------------------------------------------------------------------ costs
     def predicted_delay(self, link: Link, t: float) -> float:
         d = self.board.delay.get(link.id, 0.0)
         if d <= 0.0:
@@ -48,13 +99,38 @@ class Router:
         age = t - self.board.updated.get(link.id, t)
         return d * max(0.0, 1.0 - max(0.0, age) / self.horizon)
 
+    def announced_delay(self, link: Link, t_end: float) -> float:
+        """Time to serve the announced vehicles expected at the stop line before one arriving at `t_end`."""
+        n = self.board.announced.get((link.id, int(t_end // SLOT)))
+        if not n:
+            return 0.0
+        return AHEAD * n / max(MIN_SERVICE_RATE, link.sat_cap * self.green_share[link.id])
+
     def link_cost(self, link: Link, t: float, speed_factor: float = 1.0, delay_weight: float = 1.0) -> float:
-        return link.free_time / speed_factor + delay_weight * self.predicted_delay(link, t)
+        free = link.free_time / speed_factor
+        if delay_weight == 0.0:
+            return free
+        return free + delay_weight * (self.predicted_delay(link, t) + self.announced_delay(link, t + free))
 
-    def _heuristic(self, nid: str, dest: str, speed_factor: float) -> float:
-        a, b = self.net.nodes[nid], self.net.nodes[dest]
-        return math.hypot(a.x - b.x, a.y - b.y) / (self.vmax * speed_factor)
+    def remaining(self, dest: str) -> dict[str, float]:
+        """Free-flow time from the end of every link to node `dest`; links that cannot reach it are absent."""
+        rem = self._remaining.get(dest)
+        if rem is None:
+            rem = {link.id: 0.0 for link in self.net.in_links(dest)}
+            heap = [(0.0, lid) for lid in rem]
+            while heap:
+                d, lid = heapq.heappop(heap)
+                if d > rem[lid]:
+                    continue
+                d2 = d + self.net.links[lid].free_time
+                for prev in self.prev_links[lid]:
+                    if d2 < rem.get(prev.id, math.inf):
+                        rem[prev.id] = d2
+                        heapq.heappush(heap, (d2, prev.id))
+            self._remaining[dest] = rem
+        return rem
 
+    # ------------------------------------------------------------------ search
     def route(self, starts: list[tuple[Link, float]], dest: str, speed_factor: float = 1.0,
               delay_weight: float = 1.0, avoid: frozenset[str] = frozenset()) -> tuple[list[Link], float] | None:
         """Best route from any of `starts` (link, time its end is reached) to node `dest`.
@@ -62,32 +138,36 @@ class Router:
         Returns the list of links (starting with the chosen start link) and the
         predicted arrival time, or None if the destination cannot be reached.
         """
+        rem = self.remaining(dest)
         counter = itertools.count()
         heap: list = []
         best: dict[str, float] = {}
         parent: dict[str, str | None] = {}
         for link, t_end in starts:
-            if t_end < best.get(link.id, math.inf):
+            h = rem.get(link.id)
+            if h is not None and t_end < best.get(link.id, math.inf):
                 best[link.id] = t_end
                 parent[link.id] = None
-                heapq.heappush(heap, (t_end + self._heuristic(link.v, dest, speed_factor), next(counter), t_end, link))
+                heapq.heappush(heap, (t_end + h / speed_factor, next(counter), t_end, link))
+        links, next_links, cost = self.net.links, self.next_links, self.link_cost
         while heap:
             _, _, t, link = heapq.heappop(heap)
-            if t > best.get(link.id, math.inf):
+            if t > best[link.id]:
                 continue
             if link.v == dest:
                 path = [link]
                 while parent[path[-1].id] is not None:
-                    path.append(self.net.links[parent[path[-1].id]])
+                    path.append(links[parent[path[-1].id]])
                 return path[::-1], t
-            for nxt in self.next_links[link.id]:
-                if nxt.closed or (nxt.v in avoid and nxt.v != dest):
+            for nxt in next_links[link.id]:
+                h = rem.get(nxt.id)
+                if h is None or nxt.closed or (nxt.v in avoid and nxt.v != dest):
                     continue
-                t2 = t + self.link_cost(nxt, t, speed_factor, delay_weight)
+                t2 = t + cost(nxt, t, speed_factor, delay_weight)
                 if t2 < best.get(nxt.id, math.inf):
                     best[nxt.id] = t2
                     parent[nxt.id] = link.id
-                    heapq.heappush(heap, (t2 + self._heuristic(nxt.v, dest, speed_factor), next(counter), t2, nxt))
+                    heapq.heappush(heap, (t2 + h / speed_factor, next(counter), t2, nxt))
         return None
 
     def route_from_origin(self, origin: str, dest: str, now: float, speed_factor: float = 1.0,

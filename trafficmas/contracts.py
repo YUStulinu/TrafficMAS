@@ -23,6 +23,7 @@ TOPIC_BID = "green_bid"            # upstream neighbour bids for green on its li
 TOPIC_PLATOON = "platoon"          # a platoon was released towards a neighbour
 TOPIC_STATUS = "status"            # intersection -> coordinator: link occupancies
 TOPIC_CONGESTION = "congestion"    # coordinator -> vehicles: link delay estimates
+TOPIC_INTENTION = "intention"      # vehicle -> information board: the route it plans to drive
 TOPIC_DRAIN = "drain"              # coordinator -> intersection: serve a spilling link
 TOPIC_METER = "meter"              # coordinator -> intersection: hold traffic out of a link
 TOPIC_CORRIDOR = "corridor"        # emergency vehicle <-> intersection: slot reservation
