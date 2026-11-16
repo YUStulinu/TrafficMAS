@@ -8,20 +8,20 @@ A grid with 80 m blocks at 14000 veh/h: links hold about 20 vehicles, so queues 
 
 | variant | Avg. time in system (s) | Avg. waiting time (s) | Spillback (link-seconds) | Fairness (Jain index) | Messages per agent per minute |
 |---|---:|---:|---:|---:|---:|
-| fixed | 213.3 ± 10.4 | 169.7 ± 8.8 | 10964 ± 922 | 0.63 ± 0.02 | 43.5 ± 3.3 |
-| actuated | 166.5 ± 9.5 | 126.5 ± 9.5 | 12073 ± 1301 | 0.66 ± 0.03 | 26.0 ± 3.8 |
-| max_pressure | 167.6 ± 7.5 | 127.7 ± 7.5 | 11559 ± 971 | 0.71 ± 0.01 | 24.8 ± 2.9 |
-| before | 162.5 ± 8.6 | 122.4 ± 8.6 | 12778 ± 1975 | 0.72 ± 0.02 | 15.9 ± 0.2 |
-| **after** | 154.6 ± 8.2 | 114.8 ± 8.1 | 11100 ± 1458 | 0.71 ± 0.02 | 29.6 ± 2.8 |
-| after_no_bids | 155.0 ± 8.3 | 115.2 ± 8.3 | 11234 ± 1285 | 0.70 ± 0.02 | 26.0 ± 2.9 |
-| after_no_coordinator | 152.8 ± 7.8 | 113.0 ± 7.8 | 11152 ± 1194 | 0.73 ± 0.03 | 27.7 ± 2.9 |
+| fixed | 234.2 ± 9.5 | 189.8 ± 10.3 | 11127 ± 540 | 0.60 ± 0.01 | 54.0 ± 3.7 |
+| actuated | 204.4 ± 19.2 | 164.4 ± 19.2 | 16341 ± 2306 | 0.57 ± 0.03 | 42.2 ± 8.0 |
+| max_pressure | 191.8 ± 9.2 | 151.9 ± 9.1 | 15495 ± 950 | 0.64 ± 0.01 | 35.2 ± 4.0 |
+| before | 165.7 ± 8.2 | 125.6 ± 8.2 | 13850 ± 1707 | 0.68 ± 0.01 | 15.8 ± 0.2 |
+| **after** | 156.9 ± 8.5 | 117.1 ± 8.4 | 12177 ± 2024 | 0.69 ± 0.02 | 29.7 ± 2.5 |
+| after_no_bids | 157.0 ± 6.9 | 117.1 ± 6.9 | 12210 ± 1580 | 0.69 ± 0.01 | 26.3 ± 2.6 |
+| after_no_coordinator | 155.2 ± 7.2 | 115.3 ± 7.2 | 12331 ± 1583 | 0.72 ± 0.02 | 28.2 ± 2.2 |
 
 Tests against **after**: Mann-Whitney U, two-sided, Holm-corrected per metric; Kruskal-Wallis across all variants.
 
 | metric | Kruskal-Wallis p | vs fixed | vs actuated | vs max_pressure | vs before | vs after_no_bids | vs after_no_coordinator |
 |---|---:|---:|---:|---:|---:|---:|---:|
-| Avg. time in system (s) | 4.99e-06 | 0.0011 | 0.216 | 0.156 | 0.558 | 1 | 1 |
-| Avg. waiting time (s) | 4.82e-06 | 0.0011 | 0.216 | 0.129 | 0.637 | 1 | 1 |
-| Spillback (link-seconds) | 0.693 | 1 | 1 | 1 | 1 | 1 | 1 |
-| Fairness (Jain index) | 4.02e-06 | 0.00148 | 0.226 | 1 | 1 | 1 | 0.562 |
-| Messages per agent per minute | 2.34e-08 | 0.00123 | 0.312 | 0.125 | 0.0011 | 0.312 | 0.385 |
+| Avg. time in system (s) | 2.86e-09 | 0.0011 | 0.00307 | 0.00123 | 0.486 | 1 | 1 |
+| Avg. waiting time (s) | 3.61e-09 | 0.0011 | 0.00307 | 0.00123 | 0.637 | 1 | 1 |
+| Spillback (link-seconds) | 0.000117 | 1 | 0.0437 | 0.0701 | 0.849 | 1 | 1 |
+| Fairness (Jain index) | 2.31e-10 | 0.0011 | 0.0011 | 0.00526 | 0.546 | 0.91 | 0.162 |
+| Messages per agent per minute | 6.29e-10 | 0.0011 | 0.0144 | 0.0772 | 0.0011 | 0.108 | 0.307 |

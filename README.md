@@ -119,16 +119,17 @@ The second version of the intersection control (part 2) and of the vehicles and 
 
 - **Anticipation at the junctions.** A negotiating junction now also compares what every phase would actually serve per second of green, counting the vehicles that arrive before the queue is cleared.
 - **Intention sharing between informed drivers.** A driver who follows the traffic information announces the route it chose, and every route search counts the vehicles already announced for a link. Before this, all informed drivers saw the same congestion report and moved to the same alternative route together.
-- **Exact A\* heuristic.** The straight-line heuristic overestimated wherever a link is shorter than the drawn distance between its nodes. On the Braess network 7.7% of the route searches returned a route that was not the fastest one.
+- **Exact A\* heuristic.** The straight-line heuristic overestimated wherever a link is shorter than the drawn distance between its nodes. On the Braess network 7.7% of the route searches returned a route that was not the fastest one. Equally fast routes are now shared between drivers at random instead of everybody taking the same one.
+- **Credits cannot be spent twice.** A junction could offer the same credits to two neighbours at once and pay both. Credits offered in a bid are now held until the answer arrives.
 
 Average time in the network, in seconds:
 
 | scenario | before | anticipation only | intentions only | **after** | change |
 |---|---:|---:|---:|---:|---:|
-| grid, off-peak | 91.3 | 90.6 | 91.2 | **90.5** | −0.9% (significant) |
-| grid, saturated | 161.8 | 162.0 | 158.5 | **158.4** | −2.1% (p = 0.02) |
-| grid, morning rush hour | 144.1 | 144.8 | 141.8 | **142.2** | −1.3% (not significant) |
-| grid, accident + closed street | 111.8 | 111.8 | 111.4 | **111.3** | −0.4% (not significant) |
+| grid, off-peak | 91.4 | 90.7 | 91.2 | **90.5** | −1.0% (significant) |
+| grid, saturated | 159.9 | 159.7 | 156.6 | **156.5** | −2.1% (p = 0.01) |
+| grid, morning rush hour | 143.5 | 143.2 | 141.7 | **141.6** | −1.3% (not significant) |
+| grid, accident + closed street | 114.2 | 114.1 | 113.9 | **113.5** | −0.5% (not significant) |
 | Craiova city centre | 167.6 | 162.3 | 166.1 | **160.7** | −4.1% (significant) |
 
 The two mechanisms help in different places. Anticipation matters on the real network, where the junctions are irregular and the queues short; intention sharing matters on the saturated grid, where there are parallel routes to spread over.
@@ -137,30 +138,30 @@ Only about half of the drivers follow the traffic information in these scenarios
 
 | scenario | all informed, before | all informed, **after** | change |
 |---|---:|---:|---:|
-| grid, saturated | 172.9 | **149.1** | −13.8% (significant) |
-| grid, morning rush hour | 152.0 | **135.1** | −11.1% (significant) |
-| grid, accident + closed street | 111.1 | **105.5** | −5.0% (significant) |
-| Craiova city centre | 166.6 | **157.6** | −5.4% (significant) |
+| grid, saturated | 171.6 | **148.6** | −13.4% (significant) |
+| grid, morning rush hour | 152.1 | **135.1** | −11.2% (significant) |
+| grid, accident + closed street | 110.9 | **105.6** | −4.8% (significant) |
+| Craiova city centre | 166.7 | **157.6** | −5.5% (significant) |
 
-Without intention sharing, informing everybody made the saturated grid *slower* than the mixed fleet (172.9 s against 161.8 s): the drivers herd. With it, a fully informed fleet is the fastest configuration measured.
+Without intention sharing, informing everybody made the saturated grid *slower* than the mixed fleet (171.6 s against 159.9 s): the drivers herd. With it, a fully informed fleet is the fastest configuration measured.
 
-The price is communication. A route announcement is one message, which adds up to 9 messages per agent per minute: 20.5 instead of 11.7 on the saturated grid, and less than 1 more in Craiova.
+The price is communication. A route announcement is one message, which adds up to 9 messages per agent per minute: 20.6 instead of 11.8 on the saturated grid, and less than 1 more in Craiova.
 
 ![Upgrade of parts 2 and 3](docs/upgrade/time_in_system.png)
 
-**Short blocks.** The ablation above suggested that the negotiation layer would only matter where spillback cannot be avoided locally. `experiments/upgrade_tight.yaml` tests exactly that: the rush-hour grid with 80 m blocks (about 20 vehicles per link) at 14000 veh/h, where links are completely full for more than 11000 link-seconds whatever the controller.
+**Short blocks.** The ablation above suggested that the negotiation layer would only matter where spillback cannot be avoided locally. `experiments/upgrade_tight.yaml` tests exactly that: the rush-hour grid with 80 m blocks (about 20 vehicles per link) at 14000 veh/h, where links are completely full for 11000 to 16000 link-seconds whatever the controller.
 
 | controller | avg. time in the network (s) |
 |---|---:|
-| fixed-time | 213.3 |
-| actuated | 166.5 |
-| max-pressure | 167.6 |
-| negotiation, before | 162.5 |
-| **negotiation, after** | **154.6** |
-| after, without bids | 155.0 |
-| after, without the coordinator | 152.8 |
+| fixed-time | 234.2 |
+| actuated | 204.4 |
+| max-pressure | 191.8 |
+| negotiation, before | 165.7 |
+| **negotiation, after** | **156.9** |
+| after, without bids | 157.0 |
+| after, without the coordinator | 155.2 |
 
-The upgraded controller is 4.9% faster than the old one, but the run-to-run spread is large here (±8 s) and only its lead over fixed-time is significant. The hypothesis itself is not confirmed: even in this regime the bids change nothing, and the coordinator's directives do not help. The junction at the end of a full link can see that the link is full by itself, so a bid from its neighbour tells it nothing new. What neighbours can usefully exchange is information the other one cannot observe, which is what the route announcements of the vehicles do.
+Negotiation is significantly faster than all three classic controllers here (18% faster than max-pressure). The upgraded controller is 5.3% faster than the old one, but the run-to-run spread is large and that difference is not significant. The hypothesis itself is not confirmed: even in this regime the bids change nothing, and the coordinator's directives do not help. The junction at the end of a full link can see that the link is full by itself, so a bid from its neighbour tells it nothing new. What neighbours can usefully exchange is information the other one cannot observe, which is what the route announcements of the vehicles do.
 
 ### The Craiova network in the live view
 
@@ -275,7 +276,7 @@ Each phase gets a **score**:
         │   ◄──── ACCEPT (pay value) / REJECT ─────────────  │  settled when the phase is decided
 ```
 
-**Credits.** An accepted bid is paid with credits. Credits regenerate at 0.25 per second, up to 80. A junction that inflates its bids runs out of credits and cannot dominate its neighbours for long (see the manipulation test).
+**Credits.** An accepted bid is paid with credits. Credits regenerate at 0.25 per second, up to 80, and credits offered in a bid are held until it is answered. A junction that inflates its bids runs out of credits and cannot dominate its neighbours for long (see the manipulation test).
 
 **Platoons.** When a green ends, the agent tells each signalised downstream neighbour how many vehicles it just released and when they will arrive. The neighbour adds them to the score of the phase that serves them. Green waves then emerge from local messages alone, without any central offset plan.
 
@@ -308,7 +309,7 @@ There are three driver profiles: conservative, normal and aggressive. A driver f
 ## Tests
 
 ```bash
-.venv/Scripts/python -m pytest -q        # 143 tests, about 1.5 minutes
+.venv/Scripts/python -m pytest -q        # 144 tests, about 1 minute
 .venv/Scripts/ruff check trafficmas tests scripts
 ```
 
@@ -318,7 +319,7 @@ The harder tests run whole simulations and check properties that must hold at ev
 - **Routing against an exhaustive search.** A\* is compared with a plain Dijkstra on 480 random queries over random networks, with random delays, closures and start times; the heuristic is checked to be the exact free-flow time on every shipped network.
 - **Signal timing.** For every controller on a saturated grid: the intergreen always lasts exactly 4 s and leads to a different phase, and no green is shorter than the controller's minimum.
 - **No starvation.** Under negotiation no waiting phase stays red longer than the guard allows.
-- **Contract Net, message by message.** Every bid answers a call for proposals, there is one bid per round, every answer comes from the manager of the round, an accepted bid is paid exactly once, and credits never leave the range [0, cap]. A cheating junction never spends more than it earns.
+- **Contract Net, message by message.** Every bid answers a call for proposals, there is one bid per round, every answer comes from the manager of the round, an accepted bid is paid exactly once, and credits never leave the range [0, cap]. A cheating junction never spends more than it earns (this test found that credits could be offered twice).
 - **Coordinator.** Directives are only sent with gating enabled and never repeated before they expire.
 - **Ambulances.** No junction stays held for an ambulance that has passed or changed route, no reservation is left at the end, also with 3 s of latency and half of the messages lost; a corridor over that radio still beats no priority.
 - **Intention sharing.** With every driver informed it must shorten the trips by at least 5%; all announced plans are withdrawn when the trips end.
