@@ -92,25 +92,22 @@ class Router:
         self._remaining: dict[str, dict[str, float]] = {}
 
     # ------------------------------------------------------------------ costs
-    def predicted_delay(self, link: Link, t: float) -> float:
-        d = self.board.delay.get(link.id, 0.0)
-        if d <= 0.0:
-            return 0.0
-        age = t - self.board.updated.get(link.id, t)
-        return d * max(0.0, 1.0 - max(0.0, age) / self.horizon)
-
-    def announced_delay(self, link: Link, t_end: float) -> float:
-        """Time to serve the announced vehicles expected at the stop line before one arriving at `t_end`."""
-        n = self.board.announced.get((link.id, int(t_end // SLOT)))
-        if not n:
-            return 0.0
-        return AHEAD * n / max(MIN_SERVICE_RATE, link.sat_cap * self.green_share[link.id])
-
     def link_cost(self, link: Link, t: float, speed_factor: float = 1.0, delay_weight: float = 1.0) -> float:
+        """Time to drive `link` and clear its stop line when it is entered at time `t`."""
         free = link.free_time / speed_factor
         if delay_weight == 0.0:
             return free
-        return free + delay_weight * (self.predicted_delay(link, t) + self.announced_delay(link, t + free))
+        board = self.board
+        lid = link.id
+        delay = board.delay.get(lid, 0.0)
+        if delay > 0.0:                                   # reported queue, fading with the age of the report
+            age = t - board.updated.get(lid, t)
+            if age > 0.0:
+                delay *= max(0.0, 1.0 - age / self.horizon)
+        n = board.announced.get((lid, int((t + free) // SLOT)))
+        if n:                                             # vehicles announced for the same slot, served first
+            delay += AHEAD * n / max(MIN_SERVICE_RATE, link.sat_cap * self.green_share[lid])
+        return free + delay_weight * delay
 
     def remaining(self, dest: str) -> dict[str, float]:
         """Free-flow time from the end of every link to node `dest`; links that cannot reach it are absent."""

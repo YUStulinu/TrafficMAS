@@ -17,10 +17,13 @@ def movement_pressure(m: Movement) -> float:
     weight - giving it green would only waste the phase.
     """
     out = m.outbound
-    if not out.has_space():
+    queues = out.queues
+    queued = 0
+    for q in queues.values():
+        queued += len(q)
+    if out.closed or len(out.travellers) + queued >= out.storage:   # same test as Link.has_space
         return 0.0
-    out_q = out.queued / len(out.queues) if out.queues else 0.0
-    return len(m.queue) - out_q
+    return len(m.queue) - (queued / len(queues) if queues else 0.0)
 
 
 def clearance_time(movements: list[Movement]) -> float:

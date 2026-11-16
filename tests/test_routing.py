@@ -39,9 +39,9 @@ def test_router_delay_fades_with_time(grid):
     router = Router(grid, board, horizon=100.0)
     link = grid.link("n1_1", "n1_2")
     board.publish({link.id: 60.0}, 0.0)
-    assert router.predicted_delay(link, 0.0) == 60.0
-    assert router.predicted_delay(link, 50.0) == 30.0
-    assert router.predicted_delay(link, 150.0) == 0.0
+    assert router.link_cost(link, 0.0) - link.free_time == pytest.approx(60.0)
+    assert router.link_cost(link, 50.0) - link.free_time == pytest.approx(30.0)
+    assert router.link_cost(link, 150.0) - link.free_time == pytest.approx(0.0)
 
 
 def test_router_respects_no_u_turn(grid):
