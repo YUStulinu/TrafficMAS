@@ -7,7 +7,7 @@ branch of their own and changes only the files of their part. The rules are in
 | Part | Member | Role | Branch | Owns |
 |---|---|---|---|---|
 | 1 | IANCOVICI Teodor-Gabriel | Simulation Core & Network Architect | `part1-iancovici` | `trafficmas/sim/`, `trafficmas/network/`, `trafficmas/bus/`, `trafficmas/config.py`, `data/`, `scenarios/` (except the two below), `scripts/fetch_osm.py`, `tests/test_core.py`, `tests/test_network.py`, `tests/test_bus.py` |
-| 2 | PRODAN Constantin-Iustin | Intersection Control & Negotiation | `part2-prodan` | `trafficmas/agents/intersection.py`, `trafficmas/agents/coordinator.py`, `trafficmas/control/`, `tests/test_control.py` |
+| 2 | PRODAN Constantin-Iustin | Intersection Control & Negotiation | `part2-prodan` | `trafficmas/agents/intersection.py`, `trafficmas/agents/coordinator.py`, `trafficmas/control/`, `tests/test_control.py`, and the upgrade benchmarks: `experiments/upgrade*.yaml`, `results/upgrade*/`, `docs/upgrade/` |
 | 3 | GHEORGHEVICI Mihai | Vehicles, Routing & Emergency | `part3-gheorghevici` | `trafficmas/agents/vehicle.py`, `trafficmas/agents/emergency.py`, `trafficmas/routing/`, `scenarios/grid_emergency.yaml`, `scenarios/grid_incident.yaml`, `tests/test_routing.py`, `tests/test_emergency.py` |
 | 4 | DOBRA Robert-Cristian | Evaluation, Visualization & Experiments | `part4-dobra` | `trafficmas/metrics/`, `trafficmas/viz/`, `trafficmas/experiments/`, `trafficmas/cli.py`, `experiments/`, `results/`, `docs/`, `scripts/run_all_experiments.sh`, `scripts/plot_queues.py`, `tests/test_metrics.py` |
 
