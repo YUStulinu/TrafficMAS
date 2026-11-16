@@ -13,6 +13,8 @@ Three modes are compared:
   ambulance arrives. ETAs are refreshed while driving, the slot is released once
   the ambulance has crossed, and conflicting requests are settled by priority. A
   rejected ambulance tries to re-plan around the intersection that refused it.
+  If a reservation is never confirmed because messages were lost, the junction's
+  own sensor still detects the ambulance on the approach, as in ``preemption``.
 
 Vehicles have to pull aside on a crowded link, so the ambulance drives slower the
 fuller the link is. This is why emptying the approach early pays off.
@@ -46,6 +48,7 @@ class EmergencyVehicle(Vehicle):
         self.mode = mode
         self.reserved: dict[str, float] = {}   # node id -> eta of the accepted reservation
         self.requested: set[str] = set()
+        self.refused: set[str] = set()         # junctions that gave the slot to another ambulance
         self.rejections = 0
         sim.bus.register(self)
 
@@ -108,6 +111,7 @@ class EmergencyVehicle(Vehicle):
             return
         self.rejections += 1
         self.reserved.pop(node, None)
+        self.refused.add(node)
         self.try_detour(node)
 
     def try_detour(self, refused: str) -> None:
@@ -136,11 +140,14 @@ class EmergencyVehicle(Vehicle):
         if self.idx + 1 >= len(self.route):
             return
         nxt = self.route[self.idx + 1]
-        if self.mode == "preemption":
+        # In corridor mode the junction's own sensor is the fallback when the reservation was
+        # never confirmed (lost messages), unless the junction refused it for another ambulance.
+        unconfirmed = self.mode == "corridor" and link.v not in self.reserved and link.v not in self.refused
+        if self.mode == "preemption" or unconfirmed:
             agent = self.sim.agents.get(link.v)
             if agent is not None and agent.signalized:
                 agent.ev_detected(self, link, nxt, self.stopline_at)
-        elif self.mode == "corridor":
+        if self.mode == "corridor":
             sent = 0
             for in_link, _out, eta in self._etas(now, self.idx):
                 if sent >= ETA_UPDATES_AHEAD:
