@@ -1,0 +1,74 @@
+name: upgrade_tight
+description: 'A grid with 80 m blocks at 14000 veh/h: links hold about 20 vehicles,
+  so queues spill back into the junctions behind them whatever a single junction does.
+  This is the regime the README said was needed to see neighbours matter.'
+seeds: 10
+reference: after
+scenarios:
+- scenarios/grid_rush_hour.yaml
+variants:
+- label: fixed
+  controller: fixed
+  overrides:
+    network:
+      block: 80
+    demand:
+      rate: 14000
+- label: actuated
+  controller: actuated
+  overrides:
+    network:
+      block: 80
+    demand:
+      rate: 14000
+- label: max_pressure
+  controller: max_pressure
+  overrides:
+    network:
+      block: 80
+    demand:
+      rate: 14000
+- label: before
+  controller: negotiation_coord
+  overrides:
+    network:
+      block: 80
+    demand:
+      rate: 14000
+    routing:
+      intentions: false
+  params:
+    anticipate: false
+- label: after
+  controller: negotiation_coord
+  overrides:
+    network:
+      block: 80
+    demand:
+      rate: 14000
+- label: after_no_bids
+  controller: negotiation_coord
+  overrides:
+    network:
+      block: 80
+    demand:
+      rate: 14000
+  params:
+    use_bids: false
+- label: after_no_coordinator
+  controller: negotiation
+  overrides:
+    network:
+      block: 80
+    demand:
+      rate: 14000
+metrics:
+- avg_time_in_system
+- avg_wait_time
+- spillback_link_s
+- jain_fairness
+- messages_per_agent_min
+figures:
+- metric: avg_time_in_system
+  file: upgrade/tight_time_in_system.png
+  title: Short blocks (80 m), saturated - average time in the network (lower is better)

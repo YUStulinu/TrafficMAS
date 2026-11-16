@@ -13,6 +13,8 @@ Three modes are compared:
   ambulance arrives. ETAs are refreshed while driving, the slot is released once
   the ambulance has crossed, and conflicting requests are settled by priority. A
   rejected ambulance tries to re-plan around the intersection that refused it.
+  If the junction holds no reservation when the ambulance reaches its approach,
+  because messages were lost, its own sensor still detects it, as in ``preemption``.
 
 Vehicles have to pull aside on a crowded link, so the ambulance drives slower the
 fuller the link is. This is why emptying the approach early pays off.
@@ -41,10 +43,12 @@ class EmergencyVehicle(Vehicle):
     def __init__(self, sim: Simulation, vid: str, origin: str, dest: str, priority: int, mode: str, rng) -> None:
         super().__init__(sim, vid, origin, dest, "aggressive", rng)
         self.compliant = True   # always plans with the congestion information (see enter below)
+        self.announces = False  # its route is reserved with the junctions instead
         self.priority = priority
         self.mode = mode
         self.reserved: dict[str, float] = {}   # node id -> eta of the accepted reservation
-        self.requested: set[str] = set()
+        self.requested: dict[str, float] = {}  # node id -> eta of the latest request sent to it
+        self.refused: set[str] = set()         # junctions that gave the slot to another ambulance
         self.rejections = 0
         sim.bus.register(self)
 
@@ -57,6 +61,7 @@ class EmergencyVehicle(Vehicle):
 
     def join_queue(self, link: Link, nxt: Link) -> None:
         link.queues[nxt.id].appendleft(self)   # the others pull aside
+        self.sim.agents[link.v].ev_queued += 1
 
     # ------------------------------------------------------------------ corridor protocol
     def enter(self, link: Link, now: float, first: bool = False) -> None:
@@ -90,7 +95,7 @@ class EmergencyVehicle(Vehicle):
     def request_corridor(self, now: float, start: int) -> None:
         for in_link, out_link, eta in self._etas(now, start):
             node = in_link.v
-            self.requested.add(node)
+            self.requested[node] = eta
             self.sim.bus.send(Message(self.id, node, "REQUEST", TOPIC_CORRIDOR,
                                       {"in_link": in_link.id, "out_link": out_link.id, "eta": eta,
                                        "priority": self.priority}, conversation=self.id))
@@ -99,6 +104,8 @@ class EmergencyVehicle(Vehicle):
         if msg.topic != TOPIC_CORRIDOR or self.done:
             return
         node = msg.payload["node"]
+        if "eta" in msg.payload and msg.payload["eta"] != self.requested.get(node):
+            return   # the answer to an older request that has been replaced since
         if msg.performative == "ACCEPT":
             self.reserved[node] = msg.payload["eta"]
             return
@@ -106,6 +113,7 @@ class EmergencyVehicle(Vehicle):
             return
         self.rejections += 1
         self.reserved.pop(node, None)
+        self.refused.add(node)
         self.try_detour(node)
 
     def try_detour(self, refused: str) -> None:
@@ -134,11 +142,13 @@ class EmergencyVehicle(Vehicle):
         if self.idx + 1 >= len(self.route):
             return
         nxt = self.route[self.idx + 1]
-        if self.mode == "preemption":
+        # In corridor mode the junction's own sensor is the fallback when the junction holds no
+        # reservation (lost messages, or one that expired), unless it refused this ambulance.
+        if self.mode == "preemption" or (self.mode == "corridor" and link.v not in self.refused):
             agent = self.sim.agents.get(link.v)
             if agent is not None and agent.signalized:
                 agent.ev_detected(self, link, nxt, self.stopline_at)
-        elif self.mode == "corridor":
+        if self.mode == "corridor":
             sent = 0
             for in_link, _out, eta in self._etas(now, self.idx):
                 if sent >= ETA_UPDATES_AHEAD:

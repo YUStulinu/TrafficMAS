@@ -216,3 +216,236 @@ def test_reservation_overrides_controller_before_eta():
 def test_registry_rejects_unknown_controller():
     with pytest.raises(KeyError):
         make_controller("does_not_exist")
+
+
+class Arriving(Dummy):
+    """A vehicle driving towards the stop line, due there at `stopline_at`."""
+
+    def __init__(self, vid, stopline_at):
+        super().__init__(vid)
+        self.stopline_at = stopline_at
+
+
+def test_anticipation_serves_a_single_waiting_vehicle_when_the_green_is_idle():
+    for anticipate, expected in ((True, 1), (False, None)):
+        sim = make_sim("negotiation", {"anticipate": anticipate})
+        agent = sim.agents["n0_0"]
+        fill(movement(agent, phase=1), 1)                      # pressure 1.0 does not beat the hysteresis
+        assert agent.controller.decide(agent, 20.0) == expected
+
+
+def test_anticipation_keeps_the_green_for_a_platoon_about_to_arrive():
+    sim = make_sim("negotiation")
+    agent = sim.agents["n0_0"]
+    ctrl = agent.controller
+    fill(movement(agent, phase=1), 1)
+    link = movement(agent, phase=0).inbound
+    for i in range(4):                                         # four vehicles 1-4 s from the green stop line
+        link.travellers[f"p{i}"] = Arriving(f"p{i}", 20.0 + 1 + i)
+    assert ctrl.service_rate(agent, 0, 20.0, 0.0) == pytest.approx(4 / 4.0)
+    assert ctrl.service_rate(agent, 1, 20.0, INTERGREEN) == pytest.approx(1 / (INTERGREEN + 1.0))
+    assert ctrl.decide(agent, 20.0) is None
+
+
+def test_service_rate_ignores_vehicles_the_downstream_link_cannot_take():
+    sim = make_sim("negotiation")
+    agent = sim.agents["n0_0"]
+    m = next(mv for mv in agent.phases[1] if mv.outbound.queues)   # leads to another junction, not a gateway
+    fill(m, 6)
+    full = agent.controller.service_rate(agent, 1, 0.0, INTERGREEN)
+    occupy(m.outbound, m.outbound.storage - 2)
+    assert agent.controller.service_rate(agent, 1, 0.0, INTERGREEN) < full
+    occupy_all = m.outbound.storage - m.outbound.occupancy
+    for i in range(occupy_all):
+        m.outbound.travellers[f"z{i}"] = Arriving(f"z{i}", 1e9)
+    assert agent.controller.service_rate(agent, 1, 0.0, INTERGREEN) == 0.0
+
+
+def test_service_rate_is_zero_into_a_closed_link():
+    sim = make_sim("negotiation")
+    agent = sim.agents["n0_0"]
+    m = movement(agent, phase=1)
+    fill(m, 5)
+    assert agent.controller.service_rate(agent, 1, 0.0, INTERGREEN) > 0
+    m.outbound.closed = True
+    assert agent.controller.service_rate(agent, 1, 0.0, INTERGREEN) == 0.0
+
+
+def test_service_rate_counts_arrivals_only_for_the_phase_that_serves_their_turn():
+    sim = make_sim("negotiation", network={"type": "grid", "rows": 3, "cols": 3, "left_turn_phases": True})
+    agent = sim.agents["n1_1"]
+    assert len(agent.phases) == 4 and agent.shared_links
+    left_phase = next(p for p, ph in enumerate(agent.phases) if all(m.turn == "left" for m in ph))
+    left = agent.phases[left_phase][0]
+    main_phase = next(p for p, ph in enumerate(agent.phases)
+                      if p != left_phase and any(m.inbound is left.inbound for m in ph))
+    through = next(m for m in agent.phases[main_phase] if m.inbound is left.inbound and m.turn == "through")
+    for i, m in enumerate([left, through, through]):            # one car turning left, two going straight
+        v = Arriving(f"a{i}", 1.0 + i)
+        v.route, v.idx = [m.inbound, m.outbound], 0
+        m.inbound.travellers[v.id] = v
+    ctrl = agent.controller
+    assert ctrl.service_rate(agent, left_phase, 0.0, 0.0) == pytest.approx(1 / 1.0)
+    assert ctrl.service_rate(agent, main_phase, 0.0, 0.0) == pytest.approx(2 / 3.0)
+
+
+def test_sensor_does_not_replace_a_reserved_slot():
+    sim = make_sim("fixed")
+    agent = sim.agents["n0_0"]
+    agent.send = lambda *a, **k: None
+    b = movement(agent, phase=1)
+    agent.on_message(corridor_request("ev1", b.inbound.id, b.outbound.id, 50.0, 1))
+    ev = Dummy("ev1")
+    ev.priority = 1
+    agent.ev_detected(ev, b.inbound, b.outbound, 12.0)
+    assert not agent.reservations["ev1"].local and agent.reservations["ev1"].eta == 50.0
+
+
+# ---------------------------------------------------------------------------------------------
+# Whole-run invariants on a saturated grid with short blocks (spillback, hundreds of bids).
+
+TIGHT = {"type": "grid", "rows": 3, "cols": 3, "block": 60}
+MIN_GREEN = {"fixed": 30, "actuated": 8, "max_pressure": 20, "negotiation": 5, "negotiation_coord": 5}
+
+
+def tight_sim(controller, params=None, rate=14000, duration=900, seed=3, **extra) -> Simulation:
+    cfg = {"name": "tight", "network": dict(TIGHT), "demand": {"rate": rate, "duration": duration}, "drain": 600}
+    return Simulation({**cfg, **extra}, controller, seed=seed, controller_params=params)
+
+
+def runs_of(states):
+    """Collapse a per-tick list into [state, number of ticks] runs."""
+    out = []
+    for s in states:
+        if out and out[-1][0] == s:
+            out[-1][1] += 1
+        else:
+            out.append([s, 1])
+    return out
+
+
+@pytest.mark.parametrize("controller", list(MIN_GREEN))
+def test_signal_timing_is_respected_for_a_whole_run(controller, monkeypatch):
+    sim = tight_sim(controller)
+    log = {aid: [] for aid, a in sim.agents.items() if a.signalized}
+    original = IntersectionAgent.step
+
+    def step(agent, now, dt):
+        original(agent, now, dt)
+        if agent.signalized:
+            log[agent.id].append((agent.phase, agent.in_intergreen))
+
+    monkeypatch.setattr(IntersectionAgent, "step", step)
+    summary = sim.run()
+    assert summary["completed"] > 1500
+    switches = 0
+    for states in log.values():
+        periods = runs_of(states)
+        for i, ((phase, intergreen), ticks) in enumerate(periods[:-1]):   # the last period is cut off by the end
+            if intergreen:
+                assert ticks == INTERGREEN                   # amber + all-red always lasts exactly 4 s
+                assert periods[i + 1][0][0] != phase         # and leads to a different phase
+                switches += 1
+            elif controller == "fixed":
+                assert ticks == 30
+            else:
+                assert ticks >= MIN_GREEN[controller]
+    assert switches > 100
+
+
+def test_negotiation_never_starves_a_waiting_phase(monkeypatch):
+    sim = tight_sim("negotiation_coord")
+    ctrl = next(a.controller for a in sim.agents.values() if a.signalized)
+    bound = ctrl.max_red + ctrl.min_green + INTERGREEN + 1
+    worst = [0.0]
+    original = IntersectionAgent.step
+
+    def step(agent, now, dt):
+        original(agent, now, dt)
+        if agent.signalized:
+            for p in range(len(agent.phases)):
+                if agent.phase_queue(p) > 0:
+                    worst[0] = max(worst[0], agent.red_time(p, now))
+
+    monkeypatch.setattr(IntersectionAgent, "step", step)
+    sim.run()
+    assert 30 < worst[0] <= bound
+
+
+def test_contract_net_protocol_and_credit_accounting(monkeypatch):
+    """Every bid answers a call, gets at most one answer, and accepted bids are paid exactly once."""
+    sim = tight_sim("negotiation_coord")
+    sent = []
+    original = IntersectionAgent.send
+
+    def send(agent, receiver, performative, topic, payload, conversation=""):
+        sent.append((sim.env.now, agent.id, receiver, performative, topic, dict(payload), conversation))
+        original(agent, receiver, performative, topic, payload, conversation)
+
+    credit_range = [float("inf"), float("-inf")]
+    original_step = IntersectionAgent.step
+
+    def step(agent, now, dt):
+        original_step(agent, now, dt)
+        if agent.signalized:
+            credit_range[0] = min(credit_range[0], agent.controller.credits)
+            credit_range[1] = max(credit_range[1], agent.controller.credits)
+
+    monkeypatch.setattr(IntersectionAgent, "send", send)
+    monkeypatch.setattr(IntersectionAgent, "step", step)
+    sim.run()
+
+    calls = {(conv, receiver) for _, _, receiver, perf, _, _, conv in sent if perf == "CFP"}
+    proposals, answers = {}, {}
+    for t, sender, receiver, perf, topic, payload, conv in sent:
+        if perf == "PROPOSE":
+            assert (conv, sender) in calls                       # a bid only answers a call for proposals
+            assert (conv, sender) not in proposals               # one bid per round
+            assert payload["value"] > 0
+            proposals[(conv, sender)] = payload["value"]
+        elif topic == "green_bid":                               # ACCEPT or REJECT
+            assert conv.startswith(sender + "#")                 # only the manager of the round answers
+            assert (conv, receiver) in proposals and (conv, receiver) not in answers
+            if perf == "ACCEPT":
+                assert payload["value"] == proposals[(conv, receiver)]
+            answers[(conv, receiver)] = (t, perf)
+    assert len(proposals) > 100
+    assert len(answers) >= 0.95 * len(proposals)                 # the rest arrived after their round closed
+    controllers = [a.controller for a in sim.agents.values() if a.signalized]
+    end = sim.env.now
+    accepted = [proposals[k] for k, (t, perf) in answers.items() if perf == "ACCEPT" and t < end - 1]
+    assert sum(c.bids_won for c in controllers) >= len(accepted)
+    assert sum(c.credits_spent for c in controllers) == pytest.approx(
+        sum(proposals[k] for k, (t, perf) in answers.items() if perf == "ACCEPT" and t <= end - 0.1), rel=0.02)
+    cap = controllers[0].credit_cap
+    assert 0.0 <= credit_range[0] and credit_range[1] <= cap     # credits never go negative or above the cap
+
+
+def test_selfish_junction_cannot_outspend_its_credit_income(monkeypatch):
+    sim = tight_sim("negotiation_coord", selfish={"node": "n1_1", "factor": 5.0})
+    summary = sim.run()
+    cheat = sim.agents["n1_1"].controller
+    income = cheat.credit_rate * summary["sim_time"] + 40.0      # regeneration plus the initial credits
+    assert cheat.selfish_factor == 5.0 and cheat.bids_sent > 0
+    assert cheat.credits_spent <= income + 1e-6
+
+
+def test_coordinator_directives_only_with_gating_and_never_repeated_early(monkeypatch):
+    for controller, expect in (("negotiation", False), ("negotiation_coord", True)):
+        sim = tight_sim(controller)
+        directives = []
+        original = sim.bus.send
+
+        def send(msg, directives=directives, original=original, sim=sim):
+            if msg.topic in ("drain", "meter"):
+                directives.append((sim.env.now, msg.topic, msg.payload["link"], msg.payload["until"]))
+            original(msg)
+
+        sim.bus.send = send
+        sim.run()
+        assert bool(directives) == expect
+        active = {}
+        for now, topic, link, until in directives:
+            assert active.get((topic, link), -1.0) < now             # the previous directive has expired
+            assert until == pytest.approx(now + 30.0)
+            active[(topic, link)] = until

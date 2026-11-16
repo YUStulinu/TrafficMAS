@@ -14,7 +14,8 @@ between neighbours:
   are about to be blocked, so the bid is a request to prevent spillback.
 
 Bids are paid with **credits**. Every agent earns credits at a fixed rate up to a
-cap, and an accepted bid costs its value. A neighbour that over-bids, for example
+cap, and an accepted bid costs its value. Credits offered in a bid are held until
+the answer arrives, so they cannot be offered to two neighbours at once. A neighbour that over-bids, for example
 a selfish one that inflates its urgency, runs out of credits and cannot dominate
 the others for long. This is the incentive mechanism measured in the selfish-agent
 experiment.
@@ -29,6 +30,16 @@ The agent's architecture is a simplified BDI loop:
   seconds), and afterwards revises it only when another phase scores clearly
   better (hysteresis). Every switch costs an intergreen of lost time, so an agent
   that reconsiders too often loses capacity exactly when traffic is heaviest.
+
+**Anticipation.** Pressure compares queues, which says little when queues are
+short. Once its commitment is over, the agent therefore also compares what every
+phase would actually *serve*: its queue plus the vehicles that reach the stop line
+before the queue is cleared, per second of green, with the intergreen charged to
+the phases that are not green yet (the priority index of Laemmer and Helbing,
+2008). It switches when another phase would serve clearly more per second. A
+phase that is discharging at saturation flow always wins this comparison, so the
+rule only acts when the current green is running thin, which is where the
+pressure rule wastes time.
 
 **Platoons.** When a green ends, the agent tells each signalised downstream
 neighbour how many vehicles it just released towards it and when they will
@@ -45,11 +56,15 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import TYPE_CHECKING
 
+from trafficmas.agents.intersection import INTERGREEN
 from trafficmas.contracts import TOPIC_BID, TOPIC_CFP, TOPIC_PLATOON, Message
 from trafficmas.control.base import BaseController, clearance_time, movement_pressure
 
 if TYPE_CHECKING:
     from trafficmas.agents.intersection import IntersectionAgent
+
+
+PENDING_TIMEOUT = 30.0   # s after which an unanswered bid stops holding credits
 
 
 @dataclass
@@ -72,6 +87,7 @@ class NegotiationController(BaseController):
     def __init__(self, min_green: float = 5.0, max_green: float = 60.0, max_red: float = 90.0,
                  hysteresis: float = 1.0, commit: bool = True, max_commit: float = 40.0,
                  arrival_weight: float = 1.0, arrival_horizon: float = 4.0,
+                 anticipate: bool = True, anticipation_margin: float = 1.2, gap: float = 2.0,
                  # Contract Net
                  use_bids: bool = True, cfp_interval: float = 4.0, cfp_lead: float = 2.0, bid_weight: float = 0.4,
                  urgency_threshold: float = 0.5, bid_scale: float = 4.0, invite_threshold: float = 0.5,
@@ -94,6 +110,9 @@ class NegotiationController(BaseController):
         self.arrival_horizon = arrival_horizon
         self.max_commit = max_commit
         self.commit_until = 0.0
+        self.anticipate = anticipate
+        self.anticipation_margin = anticipation_margin
+        self.gap = gap
         self.use_bids = use_bids
         self.cfp_interval = cfp_interval
         self.cfp_lead = cfp_lead
@@ -128,6 +147,7 @@ class NegotiationController(BaseController):
         self.bids_won = 0
         self.credits_spent = 0.0
         self.platoons_sent = 0
+        self.pending: dict[str, tuple[float, float]] = {}   # round -> (credits held for our bid, time sent)
 
     # ------------------------------------------------------------------ setup
     def _resolve_neighbours(self, agent: IntersectionAgent) -> None:
@@ -145,6 +165,8 @@ class NegotiationController(BaseController):
             self.credits = min(self.credit_cap, self.credits + self.credit_rate * dt)
         if self.platoons:
             self.platoons = [p for p in self.platoons if p.t_to >= now]
+        if self.pending:   # an answer that never came (lost message) frees the credits it held
+            self.pending = {c: v for c, v in self.pending.items() if now - v[1] < PENDING_TIMEOUT}
 
     def on_green_start(self, agent: IntersectionAgent, now: float) -> None:
         if self.commit:
@@ -227,7 +249,54 @@ class NegotiationController(BaseController):
         best = max(range(n), key=lambda p: (scores[p], p == cur))
         if best != cur and scores[best] > scores[cur] + self.hysteresis:
             return self._switch(agent, best)
+        if self.anticipate:
+            rates = [self.service_rate(agent, p, now, 0.0 if p == cur else INTERGREEN) for p in range(n)]
+            best = max(range(n), key=lambda p: (rates[p], p == cur))
+            if best != cur and rates[best] > self.anticipation_margin * rates[cur]:
+                return self._switch(agent, best)
         return None
+
+    def service_rate(self, agent: IntersectionAgent, p: int, now: float, setup: float) -> float:
+        """Vehicles per second phase `p` would serve if its green started in `setup` seconds.
+
+        Counts the queues (as far as the downstream links are open and have room) and
+        then every vehicle that reaches the stop line before the ones ahead of it are
+        cleared, with at most `gap` seconds of idle green in between.
+        """
+        waiting: dict[str, int] = {}
+        need: dict[str, float] = {}       # green needed by the slowest movement of each approach
+        for m in agent.phases[p]:
+            q = len(m.queue)
+            if q:
+                out = m.outbound
+                q = 0 if out.closed else min(q, max(0, out.storage - out.occupancy))
+                if q:
+                    lid = m.inbound.id
+                    waiting[lid] = waiting.get(lid, 0) + q
+                    need[lid] = max(need.get(lid, 0.0), q / max(1e-6, m.sat_rate * m.inbound.capacity_factor))
+        links = agent.sim.net.links
+        phase_of = agent.node.phase_of
+        served, green = 0, 0.0
+        for lid in agent.phase_links[p]:
+            link = links[lid]
+            cap = max(1e-6, link.sat_cap)
+            k = waiting.get(lid, 0)
+            g = max(k / cap, need.get(lid, 0.0))
+            shared = lid in agent.shared_links
+            # In order of entry, which is the order of arrival (an overtaking ambulance is ignored).
+            for v in link.travellers.values():
+                eta = v.stopline_at - now
+                if eta > setup + g + self.gap or g >= self.max_commit:
+                    break
+                if shared:   # the approach is split between phases: count only the vehicles turning with this one
+                    nxt = v.route[v.idx + 1:v.idx + 2]
+                    if not nxt or phase_of.get((lid, nxt[0].id)) != p:
+                        continue
+                k += 1
+                g = max(g + 1.0 / cap, eta - setup)
+            served += k
+            green = max(green, g)
+        return served / (setup + max(green, 1.0)) if served else 0.0
 
     def _switch(self, agent: IntersectionAgent, p: int) -> int:
         self._settle(agent, p)
@@ -269,10 +338,11 @@ class NegotiationController(BaseController):
             if u < self.urgency_threshold:
                 return   # no interest: refusing silently saves a message
             value = self.bid_scale * u
-            if self.use_credits:
-                value = min(self.credits, value)
+            if self.use_credits:   # credits already offered to another neighbour cannot be offered twice
+                value = min(self.credits - sum(v for v, _ in self.pending.values()), value)
             if value <= 0.0:
                 return
+            self.pending[msg.conversation] = (value, agent.sim.env.now)
             self.bids_sent += 1
             agent.send(msg.sender, "PROPOSE", TOPIC_BID,
                        {"round": msg.payload["round"], "link": msg.payload["link"], "value": value},
@@ -282,6 +352,8 @@ class NegotiationController(BaseController):
                 if self.round_open and msg.payload["round"] == self.round:
                     self.bids_received += 1
                     self.bids[msg.sender] = (msg.payload["link"], msg.payload["value"])
+            elif self.pending.pop(msg.conversation, None) is None:
+                pass   # answer to a bid whose hold already timed out: the credits were released
             elif msg.performative == "ACCEPT":
                 self.bids_won += 1
                 value = msg.payload["value"]

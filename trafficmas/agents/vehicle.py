@@ -6,6 +6,13 @@ new congestion information since the last check, and switches route if the new
 one is predicted to be clearly faster. Drivers who do not follow the advice take
 their usual free-flow route. How likely a driver is to follow the advice and how
 big the gain must be depend on its profile.
+
+Informed drivers also share their intentions: when they choose a route they
+announce it to the information board, and every router query counts the vehicles
+already announced for a link (see `trafficmas.routing.router`). Without this, all
+informed drivers react to the same congestion report and move to the same
+alternative route together. Set `routing.intentions: false` in a scenario to turn
+it off.
 """
 from __future__ import annotations
 
@@ -13,6 +20,7 @@ import math
 import random
 from typing import TYPE_CHECKING
 
+from trafficmas.contracts import TOPIC_INTENTION, Message
 from trafficmas.network.road import Link
 
 if TYPE_CHECKING:
@@ -40,6 +48,8 @@ class Vehicle:
         self.profile = profile
         compliance, self.min_gain = PROFILES[profile]
         self.compliant = rng.random() < compliance
+        self.rng = rng   # breaks ties between equally fast routes
+        self.announces = self.compliant and sim.cfg["routing"].get("intentions", True)
         self.route: list[Link] = []
         self.idx = 0
         self.link: Link | None = None
@@ -67,12 +77,30 @@ class Vehicle:
     def plan(self, now: float) -> bool:
         # drivers who do not follow the congestion information drive their usual (free-flow) route
         weight = self.delay_weight if self.compliant else 0.0
-        res = self.sim.router.route_from_origin(self.origin, self.dest, now, self.speed_factor, weight)
+        res = self.sim.router.route_from_origin(self.origin, self.dest, now, self.speed_factor, weight, self.rng)
         if res is None:
             return False
         self.route = res[0]
         self.idx = 0
+        if self.announces:
+            self.announce(now)
         return True
+
+    def announce(self, now: float) -> None:
+        """Tell the information board which links this vehicle plans to use, and when."""
+        sim = self.sim
+        if sim.board.id not in sim.bus.agents:
+            sim.bus.register(sim.board)
+        cost = sim.router.link_cost
+        if self.link is None:
+            t, ahead = now, self.route
+        else:
+            t, ahead = self.stopline_at, self.route[self.idx + 1:]
+        plan = []
+        for link in ahead:
+            t += cost(link, t, self.speed_factor, self.delay_weight)
+            plan.append((link.id, t))
+        sim.bus.send(Message(self.id, sim.board.id, "INFORM", TOPIC_INTENTION, {"plan": plan}))
 
     def remaining_time(self, now: float) -> float:
         router = self.sim.router
@@ -96,6 +124,8 @@ class Vehicle:
             return False
         self.route = self.route[:self.idx] + path
         self.reroutes += 1
+        if self.announces:
+            self.announce(now)
         return True
 
     # ------------------------------------------------------------------ lifecycle
@@ -159,4 +189,5 @@ class Vehicle:
 
     def finish(self, now: float) -> None:
         self.done = True
+        self.sim.board.retire(self.id)
         self.sim.metrics.vehicle_done(self, now)

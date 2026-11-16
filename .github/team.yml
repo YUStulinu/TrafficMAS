@@ -40,6 +40,12 @@ parts:
       - trafficmas/agents/coordinator.py
       - trafficmas/control/
       - tests/test_control.py
+      # benchmarks of the control and routing upgrade (parts 2 and 3)
+      - experiments/upgrade.yaml
+      - experiments/upgrade_tight.yaml
+      - results/upgrade/
+      - results/upgrade_tight/
+      - docs/upgrade/
 
   part3:
     member: GHEORGHEVICI Mihai

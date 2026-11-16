@@ -113,6 +113,56 @@ Adding a road makes every driver slower. Selfish drivers who follow the congesti
 
 ![Braess](docs/braess_time_in_system.png)
 
+### 7. Upgrade of parts 2 and 3
+
+The second version of the intersection control (part 2) and of the vehicles and routing (part 3) adds two mechanisms and fixes one bug. `experiments/upgrade.yaml` switches them on one at a time, with 10 seeds; the tables are in [results/upgrade/summary.md](results/upgrade/summary.md).
+
+- **Anticipation at the junctions.** A negotiating junction now also compares what every phase would actually serve per second of green, counting the vehicles that arrive before the queue is cleared.
+- **Intention sharing between informed drivers.** A driver who follows the traffic information announces the route it chose, and every route search counts the vehicles already announced for a link. Before this, all informed drivers saw the same congestion report and moved to the same alternative route together.
+- **Exact A\* heuristic.** The straight-line heuristic overestimated wherever a link is shorter than the drawn distance between its nodes. On the Braess network 7.7% of the route searches returned a route that was not the fastest one. Equally fast routes are now shared between drivers at random instead of everybody taking the same one.
+- **Credits cannot be spent twice.** A junction could offer the same credits to two neighbours at once and pay both. Credits offered in a bid are now held until the answer arrives.
+
+Average time in the network, in seconds:
+
+| scenario | before | anticipation only | intentions only | **after** | change |
+|---|---:|---:|---:|---:|---:|
+| grid, off-peak | 91.4 | 90.7 | 91.2 | **90.5** | −1.0% (significant) |
+| grid, saturated | 159.9 | 159.7 | 156.6 | **156.5** | −2.1% (p = 0.01) |
+| grid, morning rush hour | 143.5 | 143.2 | 141.7 | **141.6** | −1.3% (not significant) |
+| grid, accident + closed street | 114.2 | 114.1 | 113.9 | **113.5** | −0.5% (not significant) |
+| Craiova city centre | 167.6 | 162.3 | 166.1 | **160.7** | −4.1% (significant) |
+
+The two mechanisms help in different places. Anticipation matters on the real network, where the junctions are irregular and the queues short; intention sharing matters on the saturated grid, where there are parallel routes to spread over.
+
+Only about half of the drivers follow the traffic information in these scenarios, which limits what routing can do. The same comparison for a fleet in which **every driver is informed** shows the full effect:
+
+| scenario | all informed, before | all informed, **after** | change |
+|---|---:|---:|---:|
+| grid, saturated | 171.6 | **148.6** | −13.4% (significant) |
+| grid, morning rush hour | 152.1 | **135.1** | −11.2% (significant) |
+| grid, accident + closed street | 110.9 | **105.6** | −4.8% (significant) |
+| Craiova city centre | 166.7 | **157.6** | −5.5% (significant) |
+
+Without intention sharing, informing everybody made the saturated grid *slower* than the mixed fleet (171.6 s against 159.9 s): the drivers herd. With it, a fully informed fleet is the fastest configuration measured.
+
+The price is communication. A route announcement is one message, which adds up to 9 messages per agent per minute: 20.6 instead of 11.8 on the saturated grid, and less than 1 more in Craiova.
+
+![Upgrade of parts 2 and 3](docs/upgrade/time_in_system.png)
+
+**Short blocks.** The ablation above suggested that the negotiation layer would only matter where spillback cannot be avoided locally. `experiments/upgrade_tight.yaml` tests exactly that: the rush-hour grid with 80 m blocks (about 20 vehicles per link) at 14000 veh/h, where links are completely full for 11000 to 16000 link-seconds whatever the controller.
+
+| controller | avg. time in the network (s) |
+|---|---:|
+| fixed-time | 234.2 |
+| actuated | 204.4 |
+| max-pressure | 191.8 |
+| negotiation, before | 165.7 |
+| **negotiation, after** | **156.9** |
+| after, without bids | 157.0 |
+| after, without the coordinator | 155.2 |
+
+Negotiation is significantly faster than all three classic controllers here (18% faster than max-pressure). The upgraded controller is 5.3% faster than the old one, but the run-to-run spread is large and that difference is not significant. The hypothesis itself is not confirmed: even in this regime the bids change nothing, and the coordinator's directives do not help. The junction at the end of a full link can see that the link is full by itself, so a bid from its neighbour tells it nothing new. What neighbours can usefully exchange is information the other one cannot observe, which is what the route announcements of the vehicles do.
+
 ### The Craiova network in the live view
 
 ![Craiova city centre, live view at the peak of the rush hour](docs/craiova_live.png)
@@ -191,7 +241,7 @@ The four agent types behave differently along the four properties of an agent (W
 | agent | autonomy | reactivity | proactivity | social ability |
 |---|---|---|---|---|
 | **IntersectionAgent** | chooses its own phases | reacts to its queues, corridor requests and coordinator directives | bids for green downstream before its exits fill up; announces platoons | Contract Net with its neighbours, status reports to the coordinator |
-| **VehicleAgent** | chooses its own route | re-plans on congestion broadcasts and closures | pursues its destination | listens to the coordinators' broadcasts |
+| **VehicleAgent** | chooses its own route | re-plans on congestion broadcasts and closures | pursues its destination | listens to the coordinators' broadcasts, announces its route to the other drivers |
 | **EmergencyVehicleAgent** | plans its corridor | re-plans around a junction that refuses it | reserves junctions before it reaches them | FIPA Request for every slot, ETA updates, release |
 | **CoordinatorAgent** | decides its zone's strategy | detects spillback | broadcasts congestion estimates | collects status, sends drain and meter directives |
 
@@ -212,6 +262,8 @@ Each phase gets a **score**:
 - plus the platoons announced to it;
 - plus or minus the coordinator's directives.
 
+**Anticipation.** Pressure compares queues, which says little when queues are short. Once its commitment is over, the agent therefore also compares what every phase would actually *serve*: its queue plus the vehicles that reach the stop line before that queue is cleared, per second of green, with the 4 s intergreen charged to the phases that are not green yet (the priority index of Lämmer and Helbing, 2008). It switches when another phase would serve at least 20% more per second. A phase that is discharging at saturation flow always wins this comparison, so the rule only acts when the current green is running thin.
+
 **Contract Net for green time.** Each agent is the manager of its own green time and a contractor for its downstream neighbours:
 
 ```
@@ -224,7 +276,7 @@ Each phase gets a **score**:
         │   ◄──── ACCEPT (pay value) / REJECT ─────────────  │  settled when the phase is decided
 ```
 
-**Credits.** An accepted bid is paid with credits. Credits regenerate at 0.25 per second, up to 80. A junction that inflates its bids runs out of credits and cannot dominate its neighbours for long (see the manipulation test).
+**Credits.** An accepted bid is paid with credits. Credits regenerate at 0.25 per second, up to 80, and credits offered in a bid are held until it is answered. A junction that inflates its bids runs out of credits and cannot dominate its neighbours for long (see the manipulation test).
 
 **Platoons.** When a green ends, the agent tells each signalised downstream neighbour how many vehicles it just released and when they will arrive. The neighbour adds them to the score of the phase that serves them. Green waves then emerge from local messages alone, without any central offset plan.
 
@@ -240,28 +292,39 @@ Three modes are compared:
   - On a crowded link the ambulance is slowed down by up to 2.5×, because cars have to get out of its way. So an empty approach pays off.
   - ETAs are refreshed while driving, and a slot is released as soon as the ambulance has crossed.
   - Two requests that need different phases at the same time are settled by priority: a higher priority displaces a lower one, which is told so and tries to re-plan around that junction.
+  - If a reservation is never confirmed because messages were lost, the junction's own sensor still detects the ambulance on the approach, as in `preemption`. With half of the messages lost and 3 s of latency, a corridor then costs the ambulance no more time than with a perfect radio.
 
 ### Vehicles
 
-Vehicles route with a **time-dependent A\*** over links, so turn restrictions are respected. A link costs its free-flow time plus the queueing delay last broadcast by the coordinators. That delay fades out over a horizon (10 min by default), since a queue seen now matters less to a vehicle that will arrive there much later.
+Vehicles route with a **time-dependent A\*** over links, so turn restrictions are respected. A link costs its free-flow time plus the delay expected at its stop line, which has two parts:
+- the queueing delay last broadcast by the coordinators. It fades out over a horizon (10 min by default), since a queue seen now matters less to a vehicle that will arrive there much later;
+- the time to serve the vehicles that have **announced** the same link for the same 30 s slot and are expected to arrive first (half of them, on average).
+
+The heuristic is the exact free-flow time from every link to the destination, computed once per destination by a reverse Dijkstra. It never overestimates, whatever the geometry of the network, and without congestion the search walks straight down the best route.
+
+**Intention sharing.** An informed driver sends its planned route to the information board (one `INFORM` message) when it departs and whenever it changes route, and withdraws it when it arrives. `routing.intentions: false` in a scenario turns this off.
 
 There are three driver profiles: conservative, normal and aggressive. A driver follows the advice with probability 0.2 / 0.5 / 0.9 and switches route for a gain of at least 30% / 15% / 5%. Drivers who do not follow the advice take their usual free-flow route.
 
 ## Tests
 
 ```bash
-.venv/Scripts/python -m pytest -q        # 64 tests, about 20 s
+.venv/Scripts/python -m pytest -q        # 144 tests, about 1 minute
 .venv/Scripts/ruff check trafficmas tests scripts
 ```
 
-The tests cover:
-- the network builders (phases, turns, storage, the OSM import);
-- the bus (latency, loss, zone broadcasts);
-- routing (closures, congestion, the time-dependent delay, no U-turns);
-- every controller, the commitment and starvation guard, and a full Contract Net round with payment;
-- the credit cap on a selfish bidder, and corridor conflicts settled by priority;
-- end-to-end runs of every controller, determinism per seed, ambulances in every mode, closures, and the OSM and Braess scenarios.
-- scenarios that name unknown links or nodes fail at start with a clear error.
+The unit tests cover the network builders, the bus, every controller, the Contract Net round with payment, corridor conflicts, demand and scenario validation.
+
+The harder tests run whole simulations and check properties that must hold at every step:
+- **Routing against an exhaustive search.** A\* is compared with a plain Dijkstra on 480 random queries over random networks, with random delays, closures and start times; the heuristic is checked to be the exact free-flow time on every shipped network.
+- **Signal timing.** For every controller on a saturated grid: the intergreen always lasts exactly 4 s and leads to a different phase, and no green is shorter than the controller's minimum.
+- **No starvation.** Under negotiation no waiting phase stays red longer than the guard allows.
+- **Contract Net, message by message.** Every bid answers a call for proposals, there is one bid per round, every answer comes from the manager of the round, an accepted bid is paid exactly once, and credits never leave the range [0, cap]. A cheating junction never spends more than it earns (this test found that credits could be offered twice).
+- **Coordinator.** Directives are only sent with gating enabled and never repeated before they expire.
+- **Ambulances.** No junction stays held for an ambulance that has passed or changed route, no reservation is left at the end, also with 3 s of latency and half of the messages lost; a corridor over that radio still beats no priority.
+- **Intention sharing.** With every driver informed it must shorten the trips by at least 5%; all announced plans are withdrawn when the trips end.
+- **Invariants on random configurations** (`tests/test_invariants.py`): nothing is served on red, saturation flow and link storage are respected, and no vehicle is lost or duplicated.
+- Scenarios that name unknown links or nodes fail at start with a clear error.
 
 CI (GitHub Actions) runs the tests and the linter on Linux and Windows, plus a short experiment and a headless recording of the live view.
 
@@ -300,4 +363,6 @@ docs/             figures, demo GIF, project plan
   - actuated: 8–30 s greens with a 3 s gap;
   - max-pressure: a decision every 20 s, which was much better than 8 s under saturation.
   The negotiation parameters were tuned the same way.
+- Route announcements are counted in whole 30 s slots, and the search assumes that leaving later never gets a vehicle there earlier. With announcements this is only approximately true, so a route can occasionally be a few seconds off the optimum.
+- The upgrade of parts 2 and 3 was tuned on seeds outside the evaluation seeds, like the baselines.
 - The optional reinforcement-learning baseline from the plan was not implemented.
