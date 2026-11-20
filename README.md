@@ -163,6 +163,23 @@ The price is communication. A route announcement is one message, which adds up t
 
 Negotiation is significantly faster than all three classic controllers here (18% faster than max-pressure). The upgraded controller is 5.3% faster than the old one, but the run-to-run spread is large and that difference is not significant. The hypothesis itself is not confirmed: even in this regime the bids change nothing, and the coordinator's directives do not help. The junction at the end of a full link can see that the link is full by itself, so a bid from its neighbour tells it nothing new. What neighbours can usefully exchange is information the other one cannot observe, which is what the route announcements of the vehicles do.
 
+### 8. Simulation speed
+
+A second pass over parts 2 and 3 made the simulator faster without changing a single result: all 82 scenario × controller × seed runs of the regression snapshot give the same numbers, to the last bit, as before. Every table above is therefore still valid. CPU time saved per run, against the previous version:
+
+| scenario | fixed-time | actuated | max-pressure | negotiation |
+|---|---:|---:|---:|---:|
+| grid, light | 17% | 18% | 14% | 21% |
+| grid, rush hour | 19% | 17% | 32% | 26% |
+| grid, saturated | 14% | 47% | 14% | 22% |
+| Craiova | 25% | 25% | 30% | 15% |
+
+About 20% over all sixteen configurations. Where the changes come from:
+
+- **Routing.** The A\* search reads the successors of a link from a cache built once per destination and computes the link costs inline, with the same floating-point operations as before. A re-plan is only worth it if the new route is clearly faster (see the driver profiles below), so the search stops as soon as no route can be fast enough, and is skipped altogether when even the free-flow time from here is too slow.
+- **Fewer simulation events.** When a vehicle crosses a junction, the crossing directly schedules its arrival at the next stop line: one SimPy event per link instead of two.
+- **Intersections and controllers.** The per-phase data the controllers read every second is prepared once. Within one decision, max-pressure and negotiation compute the queue of each downstream link only once, and the actuated controller looks at the current phase first.
+
 ### The Craiova network in the live view
 
 ![Craiova city centre, live view at the peak of the rush hour](docs/craiova_live.png)
@@ -305,6 +322,8 @@ The heuristic is the exact free-flow time from every link to the destination, co
 **Intention sharing.** An informed driver sends its planned route to the information board (one `INFORM` message) when it departs and whenever it changes route, and withdraws it when it arrives. `routing.intentions: false` in a scenario turns this off.
 
 There are three driver profiles: conservative, normal and aggressive. A driver follows the advice with probability 0.2 / 0.5 / 0.9 and switches route for a gain of at least 30% / 15% / 5%. Drivers who do not follow the advice take their usual free-flow route.
+
+Because of that minimum gain, a re-plan only has to find a route that beats the current one by it. The search gives up as soon as its lower bound on the arrival time rules that out, which skips most of the work of re-planning without changing its outcome.
 
 ## Tests
 
