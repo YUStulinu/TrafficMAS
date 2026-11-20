@@ -58,7 +58,7 @@ from typing import TYPE_CHECKING
 
 from trafficmas.agents.intersection import INTERGREEN
 from trafficmas.contracts import TOPIC_BID, TOPIC_CFP, TOPIC_PLATOON, Message
-from trafficmas.control.base import BaseController, clearance_time, movement_pressure
+from trafficmas.control.base import BaseController, clearance_time
 
 if TYPE_CHECKING:
     from trafficmas.agents.intersection import IntersectionAgent
@@ -173,23 +173,46 @@ class NegotiationController(BaseController):
             hold = clearance_time(agent.phases[agent.phase])
             self.commit_until = now + min(self.max_commit, max(self.min_green, hold))
 
-    def score(self, agent: IntersectionAgent, p: int, now: float) -> float:
+    def score(self, agent: IntersectionAgent, p: int, now: float, outs: dict | None = None,
+              metering: bool = True, draining: bool = True) -> float:
+        """Score of phase p. `outs` caches, within one decision, the average queue of every
+        downstream link (-1.0 when it is full or closed): the same as `movement_pressure`.
+        `metering` / `draining` False promise that no such coordinator directive is active now."""
+        if outs is None:
+            outs = {}
         s = 0.0
         coord = self.coordination
-        for m in agent.phases[p]:
-            if coord and agent.meter.get(m.outbound.id, -1.0) > now:
-                s -= self.meter_weight * m.sat_rate * len(m.queue)
-            else:
-                s += m.sat_rate * movement_pressure(m)
+        metering = coord and metering
+        meter = agent.meter
+        for _m, rate, out, q in agent._phase_moves[p]:
+            if metering and meter.get(out.id, -1.0) > now:
+                s -= self.meter_weight * rate * len(q)
+                continue
+            avg = outs.get(out)
+            if avg is None:
+                queues = out.queues
+                queued = sum(map(len, queues.values()))
+                if out.closed or len(out.travellers) + queued >= out.storage:
+                    avg = -1.0
+                else:
+                    avg = queued / len(queues) if queues else 0.0
+                outs[out] = avg
+            s += rate * (0.0 if avg < 0.0 else len(q) - avg)
         links = agent.phase_links[p]
         if self.arrival_weight > 0:
-            s += self.arrival_weight * 0.5 * agent.approaching(p, now, self.arrival_horizon)
+            horizon = self.arrival_horizon
+            n = 0
+            for link in agent._phase_link_objs[p]:   # agent.approaching(p, now, horizon), inlined
+                for v in link.travellers.values():
+                    if v.stopline_at - now <= horizon:
+                        n += 1
+            s += self.arrival_weight * 0.5 * n
         if self.bids:
             s += self.bid_weight * sum(v for lid, v in self.bids.values() if lid in links)
         if self.platoons:
             s += self.platoon_weight * 0.5 * sum(
                 pl.expected_in(now, self.platoon_horizon) for pl in self.platoons if pl.link in links)
-        if coord:
+        if coord and draining:
             for lid in links:
                 if agent.drain.get(lid, -1.0) > now:
                     s += self.drain_weight * 0.5 * agent.sim.net.links[lid].queued
@@ -224,10 +247,12 @@ class NegotiationController(BaseController):
         self.bids = {}
 
     def decide(self, agent: IntersectionAgent, now: float) -> int | None:
-        self._resolve_neighbours(agent)
-        el = agent.phase_elapsed(now)
+        if not self._resolved:
+            self._resolve_neighbours(agent)
+        el = now - agent.phase_start
         cur = agent.phase
-        committed = now < self.commit_until and agent.phase_queue(cur) > 0
+        qlists = agent._phase_qlists
+        committed = now < self.commit_until and sum(map(len, qlists[cur])) > 0
         if (self.use_bids and self.upstream and el >= self.min_green - self.cfp_lead
                 and now >= self.commit_until - self.cfp_lead and now >= self.next_cfp):
             self._open_round(agent, now)
@@ -235,13 +260,16 @@ class NegotiationController(BaseController):
             return None
         n = len(agent.phases)
         # fairness guard: a phase with waiting vehicles is never starved
-        starving = [p for p in range(n) if p != cur and agent.phase_queue(p) > 0
+        starving = [p for p in range(n) if p != cur and sum(map(len, qlists[p])) > 0
                     and agent.red_time(p, now) >= self.max_red]
         if starving:
             return self._switch(agent, max(starving, key=lambda p: agent.red_time(p, now)))
         if committed:
             return None
-        scores = [self.score(agent, p, now) for p in range(n)]
+        outs: dict = {}
+        metering = any(until > now for until in agent.meter.values())
+        draining = any(until > now for until in agent.drain.values())
+        scores = [self.score(agent, p, now, outs, metering, draining) for p in range(n)]
         if el >= self.max_green:
             others = [p for p in range(n) if p != cur and agent.phase_demand(p, now) > 0]
             if others:
@@ -265,28 +293,33 @@ class NegotiationController(BaseController):
         """
         waiting: dict[str, int] = {}
         need: dict[str, float] = {}       # green needed by the slowest movement of each approach
-        for m in agent.phases[p]:
-            q = len(m.queue)
+        for m, rate, out, queue in agent._phase_moves[p]:
+            q = len(queue)
             if q:
-                out = m.outbound
-                q = 0 if out.closed else min(q, max(0, out.storage - out.occupancy))
+                if out.closed:
+                    continue
+                q = min(q, max(0, out.storage - len(out.travellers) - sum(map(len, out.queues.values()))))
                 if q:
-                    lid = m.inbound.id
+                    inbound = m.inbound
+                    lid = inbound.id
                     waiting[lid] = waiting.get(lid, 0) + q
-                    need[lid] = max(need.get(lid, 0.0), q / max(1e-6, m.sat_rate * m.inbound.capacity_factor))
-        links = agent.sim.net.links
+                    need[lid] = max(need.get(lid, 0.0), q / max(1e-6, rate * inbound.capacity_factor))
         phase_of = agent.node.phase_of
+        shared_links = agent.shared_links
+        gap, max_commit = self.gap, self.max_commit
         served, green = 0, 0.0
-        for lid in agent.phase_links[p]:
-            link = links[lid]
-            cap = max(1e-6, link.sat_cap)
+        for link in agent._phase_link_objs[p]:
+            lid = link.id
             k = waiting.get(lid, 0)
+            if not k and not link.travellers:
+                continue
+            cap = max(1e-6, link.sat_cap)
             g = max(k / cap, need.get(lid, 0.0))
-            shared = lid in agent.shared_links
+            shared = lid in shared_links
             # In order of entry, which is the order of arrival (an overtaking ambulance is ignored).
             for v in link.travellers.values():
                 eta = v.stopline_at - now
-                if eta > setup + g + self.gap or g >= self.max_commit:
+                if eta > setup + g + gap or g >= max_commit:
                     break
                 if shared:   # the approach is split between phases: count only the vehicles turning with this one
                     nxt = v.route[v.idx + 1:v.idx + 2]
