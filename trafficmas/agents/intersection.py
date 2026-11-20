@@ -25,7 +25,7 @@ from trafficmas.contracts import (
     TOPIC_STATUS,
     Message,
 )
-from trafficmas.network.road import Link, Movement, Node
+from trafficmas.network.road import SAT_FLOW_PER_LANE, Link, Movement, Node
 
 if TYPE_CHECKING:
     from trafficmas.sim.engine import Simulation
@@ -34,6 +34,10 @@ INTERGREEN = 4.0          # amber + all-red, s
 RED_CROSS_DELAY = 8.0     # an emergency vehicle stuck at a red light crosses carefully after this, s
 EV_TIMEOUT = 90.0         # a reservation is dropped if the vehicle is this late, s
 EV_SLACK = 15.0           # a reservation window lasts this long after the ETA, s
+
+
+def _first(pair: tuple) -> float:
+    return pair[0]
 
 
 @dataclass
@@ -73,6 +77,10 @@ class IntersectionAgent:
         # the queue objects never change, so the hot loop below can hold on to them
         self._in_queues = [(link, list(link.queues.values())) for link in self.in_links]
         self._phase_queues = [[(m, m.queue) for m in ph] for ph in self.phases]
+        self._phase_qlists = [[q for _, q in pq] for pq in self._phase_queues]
+        # per phase: (movement, its saturation rate, outbound link, queue) and the approach links
+        self._phase_moves = [[(m, m.sat_rate, m.outbound, m.queue) for m in ph] for ph in self.phases]
+        self._phase_link_objs = [[sim.net.links[lid] for lid in links] for links in self.phase_links]
         # approaches served by more than one phase (protected left turns)
         self.shared_links = {lid for i, a in enumerate(self.phase_links) for lid in a
                              if any(lid in b for b in self.phase_links[i + 1:])}
@@ -91,13 +99,13 @@ class IntersectionAgent:
         return now - self.last_green[p]
 
     def phase_queue(self, p: int) -> int:
-        return sum(len(m.queue) for m in self.phases[p])
+        return sum(map(len, self._phase_qlists[p]))
 
     def approaching(self, p: int, now: float, horizon: float) -> int:
         """Vehicles that will reach a stop line of phase p within `horizon` seconds."""
         n = 0
-        for lid in self.phase_links[p]:
-            for v in self.sim.net.links[lid].travellers.values():
+        for link in self._phase_link_objs[p]:
+            for v in link.travellers.values():
                 if v.stopline_at - now <= horizon:
                     n += 1
         return n
@@ -114,19 +122,21 @@ class IntersectionAgent:
     # ------------------------------------------------------------------ main loop
     def run(self, env):
         dt = self.sim.dt
-        next_status = self.sim.status_interval
+        interval = self.sim.status_interval
+        next_status = interval
+        step, timeout = self.step, env.timeout
         while True:
             now = env.now
-            self.step(now, dt)
+            step(now, dt)
             if now >= next_status:
                 self.report_status()
-                next_status = now + self.sim.status_interval
-            yield env.timeout(dt)
+                next_status = now + interval
+            yield timeout(dt)
 
     def step(self, now: float, dt: float) -> None:
         if self.controller is not None:
             self.controller.on_tick(self, now, dt)
-        if self.in_intergreen:
+        if self.intergreen_left > 0.0:
             self.intergreen_left -= dt
             if self.intergreen_left <= 1e-9:
                 self.intergreen_left = 0.0
@@ -136,7 +146,11 @@ class IntersectionAgent:
                 if self.controller is not None:
                     self.controller.on_green_start(self, now)
         elif self.signalized:
-            target = self.emergency_target(now)
+            if self.reservations:
+                target = self.emergency_target(now)
+            else:
+                target = None
+                self.ev_hold = False
             if target is None and self.controller is not None:
                 target = self.controller.decide(self, now)
             if target is not None and target != self.phase:
@@ -154,21 +168,22 @@ class IntersectionAgent:
     def discharge(self, now: float, dt: float) -> None:
         for link, queues in self._in_queues:
             if any(queues):
-                cap = link.sat_cap * dt
+                cap = SAT_FLOW_PER_LANE * link.lanes * link.capacity_factor * dt   # link.sat_cap * dt, inlined
                 link.cap_credit = min(link.cap_credit + cap, max(1.0, cap))
-            else:
+            elif link.cap_credit:
                 link.cap_credit = 0.0
-        if not self.in_intergreen and self.phases:
+        if self.intergreen_left <= 0.0 and self.phases:
             waiting = []
             for m, q in self._phase_queues[self.phase]:
                 if q:
-                    waiting.append(m)
-                else:
+                    waiting.append((q[0].queued_at, m))
+                elif m.credit:
                     m.credit = 0.0
-            if len(waiting) > 1:   # movements competing for the same space merge first come, first served
-                waiting.sort(key=lambda m: m.queue[0].queued_at)
-            for m in waiting:
-                self._serve(m, now, dt)
+            if waiting:
+                if len(waiting) > 1:   # movements competing for the same space merge first come, first served
+                    waiting.sort(key=_first)
+                for _, m in waiting:
+                    self._serve(m, now, dt)
         if self.ev_queued:   # an ambulance waiting at a red light crosses carefully after a while
             for m in self.node.movements:
                 q = m.queue
@@ -180,9 +195,12 @@ class IntersectionAgent:
         rate = m.sat_rate * m.inbound.capacity_factor
         m.credit = min(m.credit + rate * dt, max(1.0, rate * dt))
         link = m.inbound
+        out = m.outbound
         while q and m.credit >= 1.0 and link.cap_credit >= 1.0:
             v = q[0]
-            if not v.is_emergency and not m.outbound.has_space():
+            # same test as `out.has_space()`, without the property calls
+            if not v.is_emergency and (out.closed or len(out.travellers) + sum(map(len, out.queues.values()))
+                                       >= out.storage):
                 self.sim.metrics.blocked_events += 1
                 break
             q.popleft()
@@ -277,8 +295,15 @@ class IntersectionAgent:
         elif self.controller is not None:
             self.controller.on_message(self, msg)
 
+    @staticmethod
+    def _load(link: Link) -> list[int]:
+        """[queued, occupancy, storage], each queue counted once."""
+        q = sum(map(len, link.queues.values()))
+        return [q, len(link.travellers) + q, link.storage]
+
     def report_status(self) -> None:
-        links = {link.id: [link.queued, link.occupancy, link.storage] for link in self.in_links}
-        out = {link.id: [link.queued, link.occupancy, link.storage] for link in self.sim.net.out_links(self.id)}
+        load = self._load
+        links = {link.id: load(link) for link in self.in_links}
+        out = {link.id: load(link) for link in self.sim.net.out_links(self.id)}
         self.send(self.coordinator_id, "INFORM", TOPIC_STATUS,
                   {"in": links, "out": out, "signalized": self.signalized, "phases": len(self.phases)})

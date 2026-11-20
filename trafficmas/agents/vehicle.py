@@ -91,36 +91,39 @@ class Vehicle:
         sim = self.sim
         if sim.board.id not in sim.bus.agents:
             sim.bus.register(sim.board)
-        cost = sim.router.link_cost
         if self.link is None:
             t, ahead = now, self.route
         else:
             t, ahead = self.stopline_at, self.route[self.idx + 1:]
-        plan = []
-        for link in ahead:
-            t += cost(link, t, self.speed_factor, self.delay_weight)
-            plan.append((link.id, t))
+        plan: list = []
+        sim.router.drive(ahead, t, self.speed_factor, self.delay_weight, plan)
         sim.bus.send(Message(self.id, sim.board.id, "INFORM", TOPIC_INTENTION, {"plan": plan}))
 
     def remaining_time(self, now: float) -> float:
-        router = self.sim.router
-        t = self.stopline_at
-        for link in self.route[self.idx + 1:]:
-            if link.closed:
-                return math.inf
-            t += router.link_cost(link, t, self.speed_factor, self.delay_weight)
-        return t - now
+        return self.sim.router.drive(self.route[self.idx + 1:], self.stopline_at, self.speed_factor,
+                                     self.delay_weight) - now
 
     def replan(self, now: float, force: bool = False) -> bool:
         """Re-plan from the current link. Returns True if the route changed."""
-        res = self.sim.router.route([(self.link, self.stopline_at)], self.dest, self.speed_factor,
-                                    self.delay_weight)
+        router = self.sim.router
+        limit = math.inf
+        if not force:
+            # Switching only pays if the new route arrives `min_gain` earlier than the current
+            # one, so the search may stop as soon as no route can (it has no side effects).
+            # No route arrives before the free-flow time from here: if even that is too late,
+            # the search is skipped altogether. The 1 ms margin covers rounding.
+            remaining = self.remaining_time(now)
+            limit = now + (1.0 - self.min_gain) * remaining + 1e-3
+            if self.stopline_at + router.remaining(self.dest)[self.link.id] / self.speed_factor > limit:
+                return False
+        res = router.route([(self.link, self.stopline_at)], self.dest, self.speed_factor, self.delay_weight,
+                           limit=limit)
         if res is None:
             return False
         path, arrival = res
         if path == self.route[self.idx:]:
             return False
-        if not force and (arrival - now) > (1.0 - self.min_gain) * self.remaining_time(now):
+        if not force and (arrival - now) > (1.0 - self.min_gain) * remaining:
             return False
         self.route = self.route[:self.idx] + path
         self.reroutes += 1
@@ -142,8 +145,12 @@ class Vehicle:
         self.free_flow = sum(self.link_time(link) for link in self.route)
         self.entered_network = env.now
         self.enter(self.route[0], env.now, first=True)
+        arrival = env.timeout(max(0.0, self.stopline_at - env.now))
         while True:
-            yield env.timeout(max(0.0, self.stopline_at - env.now))
+            if (yield arrival):   # crossed during the drain period (see `cross`): drive on to the stop line
+                self.count_wait(env.now)
+                arrival = env.timeout(max(0.0, self.stopline_at - env.now))
+                continue
             link = self.link
             if link.v == self.dest:
                 del link.travellers[self.id]
@@ -156,13 +163,9 @@ class Vehicle:
                 nxt = self.route[self.idx + 1]
             del link.travellers[self.id]
             self.queued_at = env.now
-            self.crossed = env.event()
+            # `cross` triggers this event when the vehicle reaches its next stop line
+            self.crossed = arrival = env.event()
             self.join_queue(link, nxt)
-            yield self.crossed
-            waited = env.now - self.queued_at
-            if waited >= 1.0:
-                self.stops += 1
-            self.wait += waited
 
     def join_queue(self, link: Link, nxt: Link) -> None:
         link.queues[nxt.id].append(self)
@@ -171,7 +174,24 @@ class Vehicle:
         """Called by the intersection when the vehicle is discharged into `out_link`."""
         self.idx += 1
         self.enter(out_link, now)
-        self.crossed.succeed()
+        ev = self.crossed
+        if now >= self.sim.horizon:
+            # The run may stop within this instant, before the vehicle wakes up, and then the
+            # wait of this crossing is not counted: wake it now, as it always used to be.
+            ev.succeed(True)
+            return
+        self.count_wait(now)
+        # Wake the vehicle up at its next stop line rather than now: one simulation event per
+        # link instead of two (Event.succeed with a delay, the way simpy's Timeout does it).
+        ev._ok = True
+        ev._value = None
+        self.sim.env.schedule(ev, delay=max(0.0, self.stopline_at - now))
+
+    def count_wait(self, now: float) -> None:
+        waited = now - self.queued_at
+        if waited >= 1.0:
+            self.stops += 1
+        self.wait += waited
 
     def enter(self, link: Link, now: float, first: bool = False) -> None:
         self.link = link

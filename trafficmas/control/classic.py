@@ -3,7 +3,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-from trafficmas.control.base import BaseController, movement_pressure
+from trafficmas.control.base import BaseController
 
 if TYPE_CHECKING:
     from trafficmas.agents.intersection import IntersectionAgent
@@ -40,23 +40,18 @@ class ActuatedController(BaseController):
         n = len(agent.phases)
         for k in range(1, n):
             p = (agent.phase + k) % n
-            if agent.phase_demand(p, now) > 0:
+            if agent.phase_queue(p) > 0 or agent.approaching(p, now, 10.0) > 0:   # phase_demand(p) > 0
                 return p
         return None
 
     def decide(self, agent: IntersectionAgent, now: float) -> int | None:
-        el = agent.phase_elapsed(now)
+        el = now - agent.phase_start
         if el < self.min_green:
             return None
-        nxt = self._next_with_demand(agent, now)
-        if nxt is None:
-            return None
-        if el >= self.max_green:
-            return nxt
         cur = agent.phase
-        if agent.phase_queue(cur) > 0 or agent.approaching(cur, now, self.gap) > 0:
-            return None
-        return nxt
+        if el < self.max_green and (agent.phase_queue(cur) > 0 or agent.approaching(cur, now, self.gap) > 0):
+            return None   # extend the green
+        return self._next_with_demand(agent, now)
 
 
 class MaxPressureController(BaseController):
@@ -71,13 +66,30 @@ class MaxPressureController(BaseController):
         self.min_green = min_green
 
     @staticmethod
-    def pressure(agent: IntersectionAgent, p: int) -> float:
-        return sum(m.sat_rate * movement_pressure(m) for m in agent.phases[p])
+    def pressure(agent: IntersectionAgent, p: int, outs: dict | None = None) -> float:
+        """Pressure of phase p. `outs` caches, within one decision, the average queue of every
+        downstream link (-1.0 when it is full or closed), as `queue_pressure` computes it."""
+        if outs is None:
+            outs = {}
+        terms = []
+        for _m, rate, out, q in agent._phase_moves[p]:
+            avg = outs.get(out)
+            if avg is None:
+                queues = out.queues
+                queued = sum(map(len, queues.values()))
+                if out.closed or len(out.travellers) + queued >= out.storage:
+                    avg = -1.0
+                else:
+                    avg = queued / len(queues) if queues else 0.0
+                outs[out] = avg
+            terms.append(rate * (0.0 if avg < 0.0 else len(q) - avg))
+        return sum(terms)
 
     def decide(self, agent: IntersectionAgent, now: float) -> int | None:
-        if agent.phase_elapsed(now) < self.min_green:
+        if now - agent.phase_start < self.min_green:
             return None
-        scores = [self.pressure(agent, p) for p in range(len(agent.phases))]
+        outs: dict = {}
+        scores = [self.pressure(agent, p, outs) for p in range(len(agent.phases))]
         best = max(range(len(scores)), key=lambda p: (scores[p], p == agent.phase))
         if best != agent.phase and scores[best] > scores[agent.phase]:
             return best
