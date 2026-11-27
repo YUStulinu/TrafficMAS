@@ -9,6 +9,17 @@ if TYPE_CHECKING:
     from trafficmas.agents.intersection import IntersectionAgent
 
 
+def _has_demand(agent: IntersectionAgent, p: int, now: float, horizon: float) -> bool:
+    """agent.phase_demand(p, now, horizon) > 0, stopping at the first vehicle found."""
+    if any(agent._phase_qlists[p]):
+        return True
+    for link in agent._phase_link_objs[p]:
+        for v in link.travellers.values():
+            if v.stopline_at - now <= horizon:
+                return True
+    return False
+
+
 class FixedTimeController(BaseController):
     """Pre-timed plan: every phase gets the same green, in a fixed cycle."""
 
@@ -17,7 +28,7 @@ class FixedTimeController(BaseController):
         self.green = green
 
     def decide(self, agent: IntersectionAgent, now: float) -> int | None:
-        if agent.phase_elapsed(now) >= self.green:
+        if now - agent.phase_start >= self.green:   # agent.phase_elapsed(now), inlined
             return (agent.phase + 1) % len(agent.phases)
         return None
 
@@ -40,7 +51,7 @@ class ActuatedController(BaseController):
         n = len(agent.phases)
         for k in range(1, n):
             p = (agent.phase + k) % n
-            if agent.phase_queue(p) > 0 or agent.approaching(p, now, 10.0) > 0:   # phase_demand(p) > 0
+            if _has_demand(agent, p, now, 10.0):
                 return p
         return None
 
@@ -48,8 +59,7 @@ class ActuatedController(BaseController):
         el = now - agent.phase_start
         if el < self.min_green:
             return None
-        cur = agent.phase
-        if el < self.max_green and (agent.phase_queue(cur) > 0 or agent.approaching(cur, now, self.gap) > 0):
+        if el < self.max_green and _has_demand(agent, agent.phase, now, self.gap):
             return None   # extend the green
         return self._next_with_demand(agent, now)
 

@@ -251,37 +251,50 @@ class NegotiationController(BaseController):
             self._resolve_neighbours(agent)
         el = now - agent.phase_start
         cur = agent.phase
-        qlists = agent._phase_qlists
-        committed = now < self.commit_until and sum(map(len, qlists[cur])) > 0
         if (self.use_bids and self.upstream and el >= self.min_green - self.cfp_lead
                 and now >= self.commit_until - self.cfp_lead and now >= self.next_cfp):
             self._open_round(agent, now)
         if el < self.min_green:
             return None
+        qlists = agent._phase_qlists   # any(qlists[p]): some vehicle is queued for phase p
         n = len(agent.phases)
         # fairness guard: a phase with waiting vehicles is never starved
-        starving = [p for p in range(n) if p != cur and sum(map(len, qlists[p])) > 0
-                    and agent.red_time(p, now) >= self.max_red]
+        last_green, max_red = agent.last_green, self.max_red
+        starving = [p for p in range(n) if p != cur and now - last_green[p] >= max_red   # red_time, inlined
+                    and any(qlists[p])]
         if starving:
             return self._switch(agent, max(starving, key=lambda p: agent.red_time(p, now)))
-        if committed:
+        if now < self.commit_until and any(qlists[cur]):   # committed
             return None
         outs: dict = {}
-        metering = any(until > now for until in agent.meter.values())
-        draining = any(until > now for until in agent.drain.values())
+        meter, drain = agent.meter, agent.drain
+        metering = any(until > now for until in meter.values()) if meter else False
+        draining = any(until > now for until in drain.values()) if drain else False
         scores = [self.score(agent, p, now, outs, metering, draining) for p in range(n)]
+        idle = False
         if el >= self.max_green:
-            others = [p for p in range(n) if p != cur and agent.phase_demand(p, now) > 0]
+            others = [p for p in range(n) if p != cur   # agent.phase_demand(p, now) > 0, inlined
+                      and (any(qlists[p]) or agent.approaching(p, now, 10.0) > 0)]
             if others:
                 return self._switch(agent, max(others, key=lambda p: scores[p]))
-        best = max(range(n), key=lambda p: (scores[p], p == cur))
+            # No other phase has a vehicle queued or due within 10 s, so none of them would serve
+            # anything before INTERGREEN + gap: all their service rates below are 0.
+            idle = INTERGREEN + self.gap <= 10.0
+        # the first best phase, the current one on a tie: max(range(n), key=lambda p: (scores[p], p == cur))
+        top = max(scores)
+        best = cur if scores[cur] == top else scores.index(top)
         if best != cur and scores[best] > scores[cur] + self.hysteresis:
             return self._switch(agent, best)
-        if self.anticipate:
-            rates = [self.service_rate(agent, p, now, 0.0 if p == cur else INTERGREEN) for p in range(n)]
-            best = max(range(n), key=lambda p: (rates[p], p == cur))
-            if best != cur and rates[best] > self.anticipation_margin * rates[cur]:
-                return self._switch(agent, best)
+        if self.anticipate and not idle:
+            # Rates are never negative, so if no other phase would serve anything the current one
+            # keeps the green whatever its own rate: that one is only computed when needed.
+            rates = [0.0 if p == cur else self.service_rate(agent, p, now, INTERGREEN) for p in range(n)]
+            if any(rates):
+                rates[cur] = self.service_rate(agent, cur, now, 0.0)
+                top = max(rates)
+                best = cur if rates[cur] == top else rates.index(top)
+                if best != cur and rates[best] > self.anticipation_margin * rates[cur]:
+                    return self._switch(agent, best)
         return None
 
     def service_rate(self, agent: IntersectionAgent, p: int, now: float, setup: float) -> float:

@@ -14,6 +14,7 @@ its green movements at saturation flow and talks to the rest of the system:
 from __future__ import annotations
 
 from dataclasses import dataclass
+from operator import itemgetter
 from typing import TYPE_CHECKING
 
 from trafficmas.contracts import (
@@ -28,6 +29,8 @@ from trafficmas.contracts import (
 from trafficmas.network.road import SAT_FLOW_PER_LANE, Link, Movement, Node
 
 if TYPE_CHECKING:
+    from collections import deque
+
     from trafficmas.sim.engine import Simulation
 
 INTERGREEN = 4.0          # amber + all-red, s
@@ -35,9 +38,7 @@ RED_CROSS_DELAY = 8.0     # an emergency vehicle stuck at a red light crosses ca
 EV_TIMEOUT = 90.0         # a reservation is dropped if the vehicle is this late, s
 EV_SLACK = 15.0           # a reservation window lasts this long after the ETA, s
 
-
-def _first(pair: tuple) -> float:
-    return pair[0]
+_first = itemgetter(0)    # sort key of the waiting movements in discharge, without a Python call
 
 
 @dataclass
@@ -76,6 +77,9 @@ class IntersectionAgent:
         self.ev_queued = 0                  # ambulances waiting at this junction's stop lines
         # the queue objects never change, so the hot loop below can hold on to them
         self._in_queues = [(link, list(link.queues.values())) for link in self.in_links]
+        self._all_queues = [q for _, queues in self._in_queues for q in queues]
+        self._idle_state: int | None = None   # see discharge
+        self._out_queues = [(link, list(link.queues.values())) for link in sim.net.out_links(node.id)]
         self._phase_queues = [[(m, m.queue) for m in ph] for ph in self.phases]
         self._phase_qlists = [[q for _, q in pq] for pq in self._phase_queues]
         # per phase: (movement, its saturation rate, outbound link, queue) and the approach links
@@ -166,35 +170,47 @@ class IntersectionAgent:
 
     # ------------------------------------------------------------------ queue service
     def discharge(self, now: float, dt: float) -> None:
+        if not any(self._all_queues):
+            # Nothing waits at any stop line, so all the code below can do is zero credits. Only this
+            # method changes credits: after an idle call in the same signal state they are all zero already.
+            state = self.phase if self.intergreen_left <= 0.0 else -1
+            if state == self._idle_state:
+                return
+            self._idle_state = state
+        else:
+            self._idle_state = None
         for link, queues in self._in_queues:
             if any(queues):
                 cap = SAT_FLOW_PER_LANE * link.lanes * link.capacity_factor * dt   # link.sat_cap * dt, inlined
-                link.cap_credit = min(link.cap_credit + cap, max(1.0, cap))
+                top = cap if cap > 1.0 else 1.0
+                credit = link.cap_credit + cap
+                link.cap_credit = top if top < credit else credit   # min(credit, max(1.0, cap)), inlined
             elif link.cap_credit:
                 link.cap_credit = 0.0
         if self.intergreen_left <= 0.0 and self.phases:
             waiting = []
             for m, q in self._phase_queues[self.phase]:
                 if q:
-                    waiting.append((q[0].queued_at, m))
+                    waiting.append((q[0].queued_at, m, q))
                 elif m.credit:
                     m.credit = 0.0
             if waiting:
                 if len(waiting) > 1:   # movements competing for the same space merge first come, first served
                     waiting.sort(key=_first)
-                for _, m in waiting:
-                    self._serve(m, now, dt)
+                for _, m, q in waiting:
+                    self._serve(m, q, now, dt)
         if self.ev_queued:   # an ambulance waiting at a red light crosses carefully after a while
             for m in self.node.movements:
                 q = m.queue
                 if q and q[0].is_emergency and not self.is_green(m) and now - q[0].queued_at >= RED_CROSS_DELAY:
                     self._cross_vehicle(q.popleft(), m, now)
 
-    def _serve(self, m: Movement, now: float, dt: float) -> None:
-        q = m.queue
-        rate = m.sat_rate * m.inbound.capacity_factor
-        m.credit = min(m.credit + rate * dt, max(1.0, rate * dt))
+    def _serve(self, m: Movement, q: deque, now: float, dt: float) -> None:
         link = m.inbound
+        add = m.sat_rate * link.capacity_factor * dt
+        top = add if add > 1.0 else 1.0
+        credit = m.credit + add
+        m.credit = top if top < credit else credit   # min(credit, max(1.0, add)), inlined
         out = m.outbound
         while q and m.credit >= 1.0 and link.cap_credit >= 1.0:
             v = q[0]
@@ -296,14 +312,15 @@ class IntersectionAgent:
             self.controller.on_message(self, msg)
 
     @staticmethod
-    def _load(link: Link) -> list[int]:
-        """[queued, occupancy, storage], each queue counted once."""
-        q = sum(map(len, link.queues.values()))
-        return [q, len(link.travellers) + q, link.storage]
+    def _loads(links: list[tuple[Link, list]]) -> dict[str, list[int]]:
+        """[queued, occupancy, storage] of every (link, its queues), each queue counted once."""
+        out = {}
+        for link, queues in links:
+            q = sum(map(len, queues))
+            out[link.id] = [q, len(link.travellers) + q, link.storage]
+        return out
 
     def report_status(self) -> None:
-        load = self._load
-        links = {link.id: load(link) for link in self.in_links}
-        out = {link.id: load(link) for link in self.sim.net.out_links(self.id)}
         self.send(self.coordinator_id, "INFORM", TOPIC_STATUS,
-                  {"in": links, "out": out, "signalized": self.signalized, "phases": len(self.phases)})
+                  {"in": self._loads(self._in_queues), "out": self._loads(self._out_queues),
+                   "signalized": self.signalized, "phases": len(self.phases)})
