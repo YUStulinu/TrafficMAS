@@ -1,11 +1,13 @@
 """Signal control and negotiation (intersection agents, controllers, Contract Net, corridors)."""
+import random
+
 import pytest
 
-from trafficmas.agents.intersection import INTERGREEN, IntersectionAgent
+from trafficmas.agents.intersection import EV_TIMEOUT, INTERGREEN, IntersectionAgent
 from trafficmas.contracts import Message
 from trafficmas.control import make_controller
 from trafficmas.control.base import clearance_time, movement_pressure
-from trafficmas.control.negotiation import NegotiationController
+from trafficmas.control.negotiation import PENDING_TIMEOUT, NegotiationController
 from trafficmas.sim.engine import Simulation
 
 from .conftest import scenario
@@ -449,3 +451,142 @@ def test_coordinator_directives_only_with_gating_and_never_repeated_early(monkey
             assert active.get((topic, link), -1.0) < now             # the previous directive has expired
             assert until == pytest.approx(now + 30.0)
             active[(topic, link)] = until
+
+
+# ---------------------------------------------------------------------------------------------
+# Messages, reservations and credits that the whole-run tests rarely reach.
+
+def test_reservation_is_dropped_when_the_ambulance_is_far_too_late():
+    sim = make_sim("fixed")
+    agent = sim.agents["n0_0"]
+    agent.send = lambda *a, **k: None
+    b = movement(agent, phase=1)
+    agent.on_message(corridor_request("ev1", b.inbound.id, b.outbound.id, 50.0, 1))
+    assert agent.emergency_target(60.0) == 1
+    assert agent.emergency_target(50.0 + EV_TIMEOUT + 1) is None    # nobody holds the junction for a lost ambulance
+    assert not agent.reservations and not agent.ev_hold
+
+
+def test_sensor_yields_to_a_higher_priority_reservation_on_another_phase():
+    sim = make_sim("fixed")
+    agent = sim.agents["n0_0"]
+    agent.send = lambda *a, **k: None
+    a, b = movement(agent, phase=0), movement(agent, phase=1)
+    agent.on_message(corridor_request("ev1", a.inbound.id, a.outbound.id, 50.0, 2))
+    low = Dummy("ev2")
+    low.priority = 1
+    agent.ev_detected(low, b.inbound, b.outbound, 40.0)
+    assert set(agent.reservations) == {"ev1"}
+
+
+def test_release_eta_and_coordinator_directives_reach_the_junction():
+    sim = make_sim("negotiation_coord")
+    agent = sim.agents["n0_0"]
+    agent.send = lambda *a, **k: None
+    b = movement(agent, phase=1)
+    agent.on_message(corridor_request("ev1", b.inbound.id, b.outbound.id, 50.0, 1))
+    agent.on_message(Message("ev1", agent.id, "INFORM", "eta_update", {"eta": 70.0}))
+    agent.on_message(Message("ev9", agent.id, "INFORM", "eta_update", {"eta": 10.0}))   # no reservation: ignored
+    assert agent.reservations["ev1"].eta == 70.0 and set(agent.reservations) == {"ev1"}
+    agent.on_message(Message("ev1", agent.id, "INFORM", "corridor_release", {}))
+    assert not agent.reservations
+    agent.on_message(Message("coord:0", agent.id, "REQUEST", "drain", {"link": b.inbound.id, "until": 99.0}))
+    agent.on_message(Message("coord:0", agent.id, "REQUEST", "meter", {"link": b.outbound.id, "until": 98.0}))
+    assert agent.drain == {b.inbound.id: 99.0} and agent.meter == {b.outbound.id: 98.0}
+
+
+def test_credits_held_by_an_unanswered_bid_are_freed_after_the_timeout():
+    """A bid whose answer is lost must not lock the credits for ever, and a late answer must not charge them."""
+    sim = make_sim("negotiation")
+    up = sim.agents["n0_0"]
+    ctrl = up.controller
+    link = sim.net.link("n0_0", "n0_1")
+    occupy(link, link.storage - 1)
+    fill(next(m for m in up.node.movements if m.outbound is link), 10)
+    ctrl.credits = 7.0
+    sent = []
+    up.send = lambda *a, **k: sent.append(a)
+
+    def cfp(conv):
+        msg = Message("n0_1", up.id, "CFP", "green_cfp", {"round": 1, "link": link.id}, conversation=conv)
+        ctrl.on_message(up, msg)
+
+    cfp("a")
+    cfp("b")                                    # the 7 credits are held by the first bid
+    assert len(sent) == 1 and sent[0][3]["value"] == pytest.approx(7.0)
+    ctrl.on_tick(up, PENDING_TIMEOUT + 1, 1.0)  # no answer came: the hold expires
+    cfp("c")
+    assert len(sent) == 2 and sent[1][3]["value"] == pytest.approx(7.25)   # plus one tick of regeneration
+    ctrl.on_message(up, Message("n0_1", up.id, "ACCEPT", "green_bid", {"round": 1, "value": 7.0}, conversation="a"))
+    assert ctrl.bids_won == 0 and ctrl.credits == pytest.approx(7.25)       # late answer: nothing charged
+
+
+def test_without_credits_bids_are_not_capped_and_cost_nothing():
+    sim = make_sim("negotiation", {"credits": False, "selfish_factor": 50.0})
+    up = sim.agents["n0_0"]
+    ctrl = up.controller
+    link = sim.net.link("n0_0", "n0_1")
+    occupy(link, link.storage - 1)
+    fill(next(m for m in up.node.movements if m.outbound is link), 10)
+    ctrl.credits = 7.0
+    sent = []
+    up.send = lambda *a, **k: sent.append(a)
+    ctrl.on_message(up, Message("n0_1", up.id, "CFP", "green_cfp", {"round": 1, "link": link.id}, conversation="a"))
+    value = sent[0][3]["value"]
+    assert value > 7.0
+    ctrl.on_message(up, Message("n0_1", up.id, "ACCEPT", "green_bid", {"round": 1, "value": value}, conversation="a"))
+    assert ctrl.bids_won == 1 and ctrl.credits_spent == value and ctrl.credits == 7.0
+
+
+def test_max_pressure_equals_the_sum_of_movement_pressures():
+    """The per-decision cache of downstream queues must not change the pressure of any phase."""
+    sim = make_sim("max_pressure")
+    agent = sim.agents["n0_0"]
+    rng = random.Random(4)
+    for i, m in enumerate(agent.node.movements):
+        fill(m, rng.randrange(6), start=10 * i)
+        if m.outbound.queues and rng.random() < 0.3:
+            occupy(m.outbound, m.outbound.storage)
+    outs = {}
+    for p, ph in enumerate(agent.phases):
+        expected = sum(m.sat_rate * movement_pressure(m) for m in ph)
+        assert agent.controller.pressure(agent, p) == expected
+        assert agent.controller.pressure(agent, p, outs) == expected
+
+
+# ---------------------------------------------------------------------------------------------
+# The shortcuts of the per-second loop: they must skip only work whose result is already known.
+
+def test_negotiation_skips_service_rates_that_cannot_win(monkeypatch):
+    sim = make_sim("negotiation")
+    agent = sim.agents["n0_0"]
+    ctrl = agent.controller
+    calls = []
+    original = NegotiationController.service_rate
+    monkeypatch.setattr(NegotiationController, "service_rate",
+                        lambda self, a, p, now, setup: calls.append(p) or original(self, a, p, now, setup))
+    fill(movement(agent, phase=0), 1)                         # demand only on the green phase
+    assert ctrl.decide(agent, 20.0) is None
+    assert calls == [1]                                       # the green phase's own rate is not needed
+    calls.clear()
+    assert ctrl.decide(agent, ctrl.max_green + 1) is None     # past max green, nothing anywhere else
+    assert calls == []
+    movement(agent, phase=0).queue.clear()
+    fill(movement(agent, phase=1), 1, start=50)
+    assert ctrl.decide(agent, 20.0) == 1                      # an idle green still gives way to a waiting vehicle
+
+
+def test_idle_junction_still_clears_the_credit_of_a_new_green():
+    """An empty junction skips its queue loop, but a phase change must still reset the leftover credit."""
+    sim = make_sim("fixed")
+    agent = sim.agents["n0_0"]
+    for t in range(3):
+        agent.discharge(float(t), 1.0)                        # idle at phase 0
+    m1 = movement(agent, phase=1)
+    m1.credit = 0.7
+    agent.phase = 1
+    agent.discharge(3.0, 1.0)
+    assert m1.credit == 0.0
+    fill(m1, 3)
+    agent.discharge(4.0, 1.0)
+    assert len(m1.queue) == 3 - int(min(m1.sat_rate, m1.inbound.sat_cap))   # served from a zero credit
