@@ -180,6 +180,26 @@ About 20% over all sixteen configurations. Where the changes come from:
 - **Fewer simulation events.** When a vehicle crosses a junction, the crossing directly schedules its arrival at the next stop line: one SimPy event per link instead of two.
 - **Intersections and controllers.** The per-phase data the controllers read every second is prepared once. Within one decision, max-pressure and negotiation compute the queue of each downstream link only once, and the actuated controller looks at the current phase first.
 
+A further pass saved another 11.5% of CPU time over the same sixteen runs (fastest of 11 runs each, measured one at a time), again with all 220 runs of the snapshot (110 configurations × 2 seeds) identical to the last bit:
+
+| scenario | fixed-time | actuated | max-pressure | negotiation |
+|---|---:|---:|---:|---:|
+| grid, light | 8% | 7% | 17% | 13% |
+| grid, rush hour | 12% | 11% | 10% | 13% |
+| grid, saturated | 13% | 15% | 13% | 10% |
+| Craiova | 10% | 3% | 9% | 17% |
+
+- **Routing.** The heap key `round(f, 6)` is computed with an exact equivalent that avoids the decimal conversion of `round()`, and a bounded re-planning search no longer stores entries beyond its limit.
+- **Junctions.** A junction with nothing queued skips its discharge loop once its credits are zero, and the negotiating controller does not compute the service rates that cannot change its decision.
+
+The snapshot and the timing are reproducible with `scripts/benchmark.py`:
+
+```bash
+.venv/Scripts/python scripts/benchmark.py snapshot before.json            # every experiment configuration
+.venv/Scripts/python scripts/benchmark.py snapshot after.json --compare before.json
+.venv/Scripts/python scripts/benchmark.py time --repeat 3                 # the 16 runs above, one at a time
+```
+
 ### The Craiova network in the live view
 
 ![Craiova city centre, live view at the peak of the rush hour](docs/craiova_live.png)
@@ -328,7 +348,7 @@ Because of that minimum gain, a re-plan only has to find a route that beats the 
 ## Tests
 
 ```bash
-.venv/Scripts/python -m pytest -q        # 144 tests, about 1 minute
+.venv/Scripts/python -m pytest -q        # 192 tests, under a minute
 .venv/Scripts/ruff check trafficmas tests scripts
 ```
 
@@ -344,6 +364,8 @@ The harder tests run whole simulations and check properties that must hold at ev
 - **Intention sharing.** With every driver informed it must shorten the trips by at least 5%; all announced plans are withdrawn when the trips end.
 - **Invariants on random configurations** (`tests/test_invariants.py`): nothing is served on red, saturation flow and link storage are respected, and no vehicle is lost or duplicated.
 - Scenarios that name unknown links or nodes fail at start with a clear error.
+- **Detours and closed roads.** A refused ambulance re-plans around the junction when the detour is at most 30% slower, frees the slots it no longer needs and requests the new corridor; a vehicle facing a closed road with no alternative waits for it to reopen.
+- **The speed-ups stay exact.** A bounded search returns the unbounded answer or nothing, the reported arrival is the route's cost bit for bit, the fast rounding equals `round()`, and A\* pops at most 70% of the heap entries of a plain Dijkstra.
 
 CI (GitHub Actions) runs the tests and the linter on Linux and Windows, plus a short experiment and a headless recording of the live view.
 
