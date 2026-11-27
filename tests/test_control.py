@@ -477,6 +477,9 @@ def test_sensor_yields_to_a_higher_priority_reservation_on_another_phase():
     low.priority = 1
     agent.ev_detected(low, b.inbound, b.outbound, 40.0)
     assert set(agent.reservations) == {"ev1"}
+    agent.ev_passed("ev1")
+    agent.ev_detected(low, b.inbound, b.outbound, 40.0)        # without it, the sensor does switch
+    assert agent.reservations["ev2"].local and agent.reservations["ev2"].phase == 1
 
 
 def test_release_eta_and_coordinator_directives_reach_the_junction():

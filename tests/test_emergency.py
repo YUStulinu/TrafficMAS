@@ -188,7 +188,9 @@ def test_ambulance_refused_by_the_junction_it_is_driving_to_stays_put():
     ev = sim.spawn_emergency("evx", "W1", "E1", 1)
     sim.env.run(until=5.0)
     old = list(ev.route)
-    assert refuse(ev, ev.link.v) == [] and ev.route == old      # already on its approach: nothing to avoid
+    node = ev.link.v
+    assert refuse(ev, node) == [] and ev.route == old           # already on its approach: nothing to avoid
+    assert ev.rejections == 1 and node in ev.refused            # but the refusal is recorded
 
 
 def test_ambulance_ignores_other_topics_performatives_and_finished_trips():

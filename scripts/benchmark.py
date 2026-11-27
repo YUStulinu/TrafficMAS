@@ -73,6 +73,9 @@ def compare(rows: list[dict], old_path: Path, per_run: bool) -> int:
     """Print what changed against an older file of rows; 1 if any result differs."""
     old = {r["key"]: r for r in json.loads(old_path.read_text(encoding="utf-8"))}
     both = [r for r in rows if r["key"] in old]
+    if not both:
+        print(f"no run in common with {old_path.name}: nothing compared")
+        return 1
     changed = [r["name"] for r in both if r["hash"] != old[r["key"]]["hash"]]
     if per_run:
         print(f"{'run':40} {'before s':>9} {'after s':>9} {'saved':>7}")
