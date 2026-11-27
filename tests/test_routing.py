@@ -10,7 +10,7 @@ from trafficmas.network.braess import build_braess
 from trafficmas.network.grid import build_grid
 from trafficmas.network.osm import build_osm
 from trafficmas.network.road import RoadNetwork
-from trafficmas.routing.router import AHEAD, SLOT, Router, TrafficInfoBoard
+from trafficmas.routing.router import AHEAD, SLOT, Router, TrafficInfoBoard, _round6
 
 ROOT = Path(__file__).resolve().parent.parent
 
@@ -225,3 +225,127 @@ def test_equally_fast_routes_are_shared_between_drivers():
     first = router.route_from_origin("W0", "N3", 0.0, rng=random.Random(7))[0]
     again = router.route_from_origin("W0", "N3", 0.0, rng=random.Random(7))[0]
     assert first == again                              # and the choice is reproducible per driver
+
+
+# ------------------------------------------------------------------ guards of the search speed-ups
+# The search is tuned for speed (inlined costs, a faster rounding, pruned heap entries); results must stay exact.
+
+def load_board(rng: random.Random, net: RoadNetwork, board: TrafficInfoBoard) -> None:
+    """Random reported delays, announced intentions and closures, as a run produces them."""
+    board.publish({lid: rng.uniform(0, 500) for lid in rng.sample(sorted(net.links), 10)}, rng.uniform(0, 300))
+    for i in range(60):
+        board.book(f"v{i}", [(lid, rng.uniform(300, 1500)) for lid in rng.sample(sorted(net.links), 6)])
+    for link in rng.sample(list(net.links.values()), 3):
+        link.closed = rng.random() < 0.5
+    for link in rng.sample(list(net.links.values()), 10):
+        link.capacity_factor = rng.choice([1.0, 0.35, 0.6])     # an incident narrows the road
+
+
+def random_queries(seed: int, n: int = 10):
+    rng = random.Random(seed)
+    net = random_network(rng)
+    board = TrafficInfoBoard()
+    router = Router(net, board)
+    for _ in range(n):
+        load_board(rng, net, board)
+        now = rng.uniform(300, 900)
+        origin, dest = rng.sample(sorted(net.nodes), 2)
+        sf, dw = rng.choice([1.0, 1.25]), rng.choice([0.0, 0.3, 1.0])
+        starts = [(link, now + router.link_cost(link, now, sf, dw))
+                  for link in net.out_links(origin) if not link.closed]
+        yield router, starts, dest, now, sf, dw
+
+
+@pytest.mark.parametrize("seed", range(20))
+def test_bounded_search_is_the_unbounded_one_cut_at_the_limit(seed):
+    """Re-planning stops the search at `limit`: it must return the unbounded answer or nothing, never another route."""
+    for router, starts, dest, now, sf, dw in random_queries(seed):
+        full = router.route(starts, dest, sf, dw)
+        if full is None:
+            assert router.route(starts, dest, sf, dw, limit=now + 1e6) is None
+            continue
+        f = round(full[1], 6)
+        for limit in (f - 1.0, f - 1e-6, f, f + 1e-6, f + 50.0):
+            assert router.route(starts, dest, sf, dw, limit=limit) == (full if f <= limit else None)
+
+
+@pytest.mark.parametrize("seed", range(10))
+def test_reported_arrival_is_exactly_the_cost_of_the_route(seed):
+    """The search inlines link_cost; the inlined arithmetic must give the same doubles, bit for bit."""
+    for router, starts, dest, now, sf, dw in random_queries(100 + seed):
+        res = router.route(starts, dest, sf, dw)
+        if res is None:
+            continue
+        path, arrival = res
+        t = next(t for link, t in starts if link is path[0])
+        for link in path[1:]:
+            t += router.link_cost(link, t, sf, dw)
+        assert t == arrival
+        assert router.drive(path, now, sf, dw) == arrival
+
+
+def test_fast_rounding_is_round():
+    """The heap is keyed on round(f, 6) through a faster equivalent, which must agree on every value."""
+    rng = random.Random(5)
+    values = [rng.uniform(0, 10 ** rng.randint(0, 6)) for _ in range(20000)]
+    values += [(k + 0.5) / 1e6 for k in range(0, 10 ** 7, 99991)]          # exactly half-way in decimal
+    values += [0.0, -3.25, 1e-7, 5e-7, 123.4565, 1e5 + 5e-7, 2e11, math.inf]
+    assert all(_round6(x) == round(x, 6) for x in values)
+
+
+def test_drive_on_a_closed_link_and_without_delays(grid):
+    board = TrafficInfoBoard()
+    router = Router(grid, board)
+    path = [grid.link("W1", "n1_0"), grid.link("n1_0", "n1_1")]
+    board.publish({path[1].id: 100.0}, path[0].free_time)                       # reported as it is entered
+    free = path[0].free_time + path[1].free_time
+    assert router.drive(path, 0.0, delay_weight=0.0) == pytest.approx(free)        # uninformed: free flow
+    assert router.drive(path, 0.0) == pytest.approx(free + 100.0)
+    path[1].closed = True
+    assert router.drive(path, 0.0) == math.inf                                     # a closed road is never reached
+    times = []
+    router.drive(path, 0.0, times=times)                                           # an announced plan still lists it
+    assert [lid for lid, _ in times] == [link.id for link in path]
+
+
+def test_astar_expands_far_fewer_links_than_dijkstra(monkeypatch):
+    """Efficiency: the exact free-flow heuristic must keep searches well below a plain Dijkstra."""
+    import trafficmas.routing.router as router_module
+    pops = [0]
+
+    def counting_pop(heap):
+        pops[0] += 1
+        return heapq.heappop(heap)
+
+    monkeypatch.setattr(router_module, "heapq", type("H", (), {"heappush": heapq.heappush, "heappop": counting_pop}))
+    astar = dijkstra = 0
+    for seed in range(10):
+        for router, starts, dest, _now, sf, dw in random_queries(200 + seed, n=20):
+            router.remaining(dest)                    # the heuristic's own reverse search is not part of the query
+            pops[0] = 0
+            router.route(starts, dest, sf, dw)
+            astar += pops[0]
+            dijkstra += dijkstra_pops(router, starts, dest, sf, dw)
+    assert astar <= 0.7 * dijkstra                  # about 0.3 with delays only, 0.55 with announcements
+
+
+def dijkstra_pops(router: Router, starts, dest, sf, dw) -> int:
+    """Heap pops of `reference` for the same query."""
+    best = {link.id: t for link, t in starts}
+    heap = [(t, link.id) for link, t in starts]
+    heapq.heapify(heap)
+    pops = 0
+    while heap:
+        t, lid = heapq.heappop(heap)
+        pops += 1
+        if t > best[lid]:
+            continue
+        if router.net.links[lid].v == dest:
+            return pops
+        for nxt in router.next_links[lid]:
+            if not nxt.closed:
+                t2 = t + router.link_cost(nxt, t, sf, dw)
+                if t2 < best.get(nxt.id, math.inf):
+                    best[nxt.id] = t2
+                    heapq.heappush(heap, (t2, nxt.id))
+    return pops

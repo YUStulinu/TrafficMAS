@@ -2,16 +2,31 @@
 from __future__ import annotations
 
 import heapq
-import itertools
 import math
 import random
 
 from trafficmas.contracts import Message
-from trafficmas.network.road import Link, RoadNetwork
+from trafficmas.network.road import SAT_FLOW_PER_LANE, Link, RoadNetwork
 
 SLOT = 30.0             # s, resolution of the announced intentions
 AHEAD = 0.5             # share of the vehicles announced for a slot that arrive before a given one
 MIN_SERVICE_RATE = 0.05  # veh/s, floor for the discharge rate of a link
+_MAGIC = 1.5 * 2.0 ** 52  # y + _MAGIC - _MAGIC rounds y (|y| < 2**51) to the nearest integer
+
+
+def _round6(x: float) -> float:
+    """round(x, 6), bit for bit, three times faster (round() goes through a decimal string).
+
+    For 0 < y = x * 1e6 < 1e11 the product is off the exact x * 10**6 by less than 1e-5, so
+    when y is not within 1e-4 of a half-integer, the integer k nearest to y is the one nearest
+    to x * 10**6, and k / 1e6 (correctly rounded) is the double that round(x, 6) returns.
+    Every other value, a tiny share, goes to round() itself.
+    """
+    y = x * 1e6
+    k = y + _MAGIC - _MAGIC
+    if -0.4999 < y - k < 0.4999 and 0.0 < y < 1e11:
+        return k / 1e6
+    return round(x, 6)
 
 
 class TrafficInfoBoard:
@@ -143,10 +158,12 @@ class Router:
                 if delay > 0.0:
                     age = t - uget(lid, t)
                     if age > 0.0:
-                        delay *= max(0.0, 1.0 - age / horizon)
+                        fade = 1.0 - age / horizon               # max(0.0, fade), inlined
+                        delay *= fade if fade > 0.0 else 0.0
                 n = aget((lid, int((t + free) // SLOT)))
                 if n:
-                    delay += AHEAD * n / max(MIN_SERVICE_RATE, link.sat_cap * share[lid])
+                    rate = SAT_FLOW_PER_LANE * link.lanes * link.capacity_factor * share[lid]   # link.sat_cap * ...
+                    delay += AHEAD * n / (rate if rate > MIN_SERVICE_RATE else MIN_SERVICE_RATE)
                 t += free + delay_weight * delay
             if times is not None:
                 times.append((lid, t))
@@ -172,11 +189,14 @@ class Router:
 
     def successors(self, dest: str) -> dict[str, list]:
         """For every link, the successors that can still reach `dest`, with what the search reads of them:
-        (link, id, end node, free-flow time, free-flow time from its end to `dest`). Cached per destination."""
+        (link, id, end node, free-flow time, free-flow time from its end to `dest`, SAT_FLOW_PER_LANE * lanes,
+        green share). Cached per destination."""
         succ = self._succ.get(dest)
         if succ is None:
             rem = self.remaining(dest)
-            succ = {lid: [(n, n.id, n.v, n.free_time, rem[n.id]) for n in nexts if n.id in rem]
+            share = self.green_share
+            succ = {lid: [(n, n.id, n.v, n.free_time, rem[n.id], SAT_FLOW_PER_LANE * n.lanes, share[n.id])
+                          for n in nexts if n.id in rem]
                     for lid, nexts in self.next_links.items()}
             self._succ[dest] = succ
         return succ
@@ -196,7 +216,6 @@ class Router:
         # The loop below inlines `link_cost` with the same floating-point operations in the
         # same order, so routes and arrival times are bit-identical to calling it.
         rem = self.remaining(dest)
-        cnext = itertools.count().__next__
         tie = rng.random if rng is not None else None
         unit = speed_factor == 1.0                       # x / 1.0 == x exactly, so skip the division
         heap: list = []
@@ -205,18 +224,23 @@ class Router:
         bget = best.get
         parent: dict[str, str | None] = {}
         inf = math.inf
+        count = 0                                        # insertion order, breaks the remaining ties
         for link, t_end in starts:
             h = rem.get(link.id)
             if h is not None and t_end < bget(link.id, inf):
                 best[link.id] = t_end
                 parent[link.id] = None
-                push(heap, (round(t_end + (h if unit else h / speed_factor), 6), tie() if tie else 0.0, cnext(),
+                count += 1
+                push(heap, (_round6(t_end + (h if unit else h / speed_factor)), tie() if tie else 0.0, count,
                             t_end, link))
         succ = self.successors(dest)
         informed = delay_weight != 0.0
         board = self.board
         dget, uget, aget = board.delay.get, board.updated.get, board.announced.get
-        horizon, share = self.horizon, self.green_share
+        horizon, magic = self.horizon, _MAGIC
+        # An entry above `limit` could only be popped to end the search with None, so it is not
+        # pushed at all (each push draws from `rng`, so never with one).
+        cut = limit if tie is None else inf
         while heap:
             f, _, _, t, link = pop(heap)
             if f > limit:   # f is a lower bound of the arrival time of every route left
@@ -226,7 +250,7 @@ class Router:
                 continue
             if link.v == dest:
                 return self._path(link, parent), t
-            for nxt, nid, nv, ft, h in succ[lid]:
+            for nxt, nid, nv, ft, h, cap, share in succ[lid]:
                 if nxt.closed or (avoid and nv in avoid and nv != dest):
                     continue
                 free = ft if unit else ft / speed_factor
@@ -235,25 +259,35 @@ class Router:
                     if delay > 0.0:
                         age = t - uget(nid, t)
                         if age > 0.0:
-                            delay *= max(0.0, 1.0 - age / horizon)
+                            fade = 1.0 - age / horizon           # max(0.0, fade), inlined
+                            delay *= fade if fade > 0.0 else 0.0
                     n = aget((nid, int((t + free) // SLOT)))
                     if n:
-                        delay += AHEAD * n / max(MIN_SERVICE_RATE, nxt.sat_cap * share[nid])
+                        rate = cap * nxt.capacity_factor * share   # nxt.sat_cap * share, same operations
+                        delay += AHEAD * n / (rate if rate > MIN_SERVICE_RATE else MIN_SERVICE_RATE)
                     t2 = t + (free + delay_weight * delay)
                 else:
                     t2 = t + free
                 if t2 < bget(nid, inf):
                     best[nid] = t2
                     parent[nid] = lid
-                    push(heap, (round(t2 + (h if unit else h / speed_factor), 6), tie() if tie else 0.0, cnext(),
-                                t2, nxt))
+                    x = t2 + (h if unit else h / speed_factor)
+                    y = x * 1e6                                    # f = _round6(x), inlined
+                    k = y + magic - magic
+                    f = k / 1e6 if -0.4999 < y - k < 0.4999 and 0.0 < y < 1e11 else round(x, 6)
+                    if f > cut:
+                        continue
+                    count += 1
+                    push(heap, (f, tie() if tie else 0.0, count, t2, nxt))
         return None
 
     def _path(self, last: Link, parent: dict[str, str | None]) -> list[Link]:
         links = self.net.links
         path = [last]
-        while parent[path[-1].id] is not None:
-            path.append(links[parent[path[-1].id]])
+        lid = parent[last.id]
+        while lid is not None:
+            path.append(links[lid])
+            lid = parent[lid]
         return path[::-1]
 
     def route_from_origin(self, origin: str, dest: str, now: float, speed_factor: float = 1.0,

@@ -144,3 +144,94 @@ def test_ambulance_ignores_the_answer_to_a_request_it_has_replaced():
     assert "n0_1" in ev.reserved and "n0_1" not in ev.refused and ev.rejections == 0
     ev.on_message(Message("n0_1", ev.id, "REJECT", "corridor", {"node": "n0_1", "reason": "displaced"}))
     assert "n0_1" not in ev.reserved and "n0_1" in ev.refused and ev.rejections == 1
+
+
+# ---------------------------------------------------------------------------------------------
+# Re-planning around refusals and closed roads.
+
+def refuse(ev, node):
+    """A REJECT from `node` to the ambulance's latest request, recording what it sends in reply."""
+    from trafficmas.contracts import Message
+    sent = []
+    original = ev.sim.bus.send
+    ev.sim.bus.send = lambda m: (sent.append((m.receiver, m.topic)), original(m))
+    ev.on_message(Message(node, ev.id, "REJECT", "corridor", {"node": node, "reason": "conflict",
+                                                              "eta": ev.requested[node]}))
+    return sent
+
+
+def test_refused_ambulance_takes_a_detour_and_moves_its_corridor():
+    sim = busy("corridor", rate=0, network={"type": "grid", "rows": 3, "cols": 8, "block": 200})
+    ev = sim.spawn_emergency("evx", "W1", "E1", 1)
+    sim.env.run(until=5.0)
+    old = [link.v for link in ev.route]
+    sent = refuse(ev, "n1_4")
+    new = [link.v for link in ev.route]
+    assert "n1_4" in old and "n1_4" not in new and ev.rejections == 1
+    released = {r for r, topic in sent if topic == "corridor_release"}
+    assert released == set(old) - set(new) - {"E1"}            # every junction it no longer passes is freed
+    requested = {r for r, topic in sent if topic == "corridor"}
+    assert requested == {n for n in new[ev.idx:] if sim.agents.get(n) is not None and sim.agents[n].signalized}
+
+
+def test_refused_ambulance_keeps_its_route_when_the_detour_is_too_slow():
+    sim = busy("corridor", rate=0)
+    ev = sim.spawn_emergency("evx", "W1", "E1", 1)
+    sim.env.run(until=5.0)
+    old = list(ev.route)
+    sent = refuse(ev, "n1_2")                                  # avoiding it costs more than 30%
+    assert ev.route == old and not sent and "n1_2" in ev.refused
+
+
+def test_ambulance_refused_by_the_junction_it_is_driving_to_stays_put():
+    sim = busy("corridor", rate=0)
+    ev = sim.spawn_emergency("evx", "W1", "E1", 1)
+    sim.env.run(until=5.0)
+    old = list(ev.route)
+    node = ev.link.v
+    assert refuse(ev, node) == [] and ev.route == old           # already on its approach: nothing to avoid
+    assert ev.rejections == 1 and node in ev.refused            # but the refusal is recorded
+
+
+def test_ambulance_ignores_other_topics_performatives_and_finished_trips():
+    from trafficmas.contracts import Message
+    sim = busy("corridor", rate=0)
+    ev = sim.spawn_emergency("evx", "W1", "E1", 1)
+    ev.on_message(Message("n1_0", ev.id, "INFORM", "platoon", {"node": "n1_0"}))
+    ev.on_message(Message("n1_0", ev.id, "INFORM", "corridor", {"node": "n1_0"}))
+    assert not ev.reserved and not ev.refused
+    ev.done = True
+    ev.on_message(Message("n1_0", ev.id, "REJECT", "corridor", {"node": "n1_0", "reason": "conflict"}))
+    assert ev.rejections == 0
+
+
+def test_vehicles_without_a_route_are_counted_and_dropped():
+    sc = load_scenario("scenarios/braess.yaml")                # one-way network: E cannot reach S
+    sim = Simulation(sc, "fixed", seed=1, overrides={"demand": {"rate": 0}}, base_dir=ROOT)
+    sim.spawn_vehicle("v1", "E", "S", "normal")
+    sim.spawn_emergency("ev1", "E", "S")
+    s = sim.run()
+    assert s["unroutable"] == 2 and not sim.vehicles and not sim.metrics.active
+
+
+def test_vehicle_waits_at_a_closed_road_without_alternative():
+    cfg = scenario(rate=0, network={"type": "grid", "rows": 1, "cols": 2, "block": 200},
+                   incidents=[{"link": "n0_0->n0_1", "start": 5, "end": 300, "closed": True}])
+    sim = Simulation(cfg, "fixed", seed=1)
+    v = sim.spawn_vehicle("v1", "W0", "E0", "normal")           # routed before the road closes
+    s = sim.run()
+    assert v.done and s["completed"] == 1 and s["avg_travel_time"] > 300 - 5
+
+
+def test_replan_searches_only_when_a_faster_route_is_possible():
+    sim = busy("none", rate=0)
+    v = sim.spawn_vehicle("v1", "W1", "E1", "aggressive")
+    sim.env.run(until=5.0)
+    calls = []
+    original = sim.router.route
+    sim.router.route = lambda *a, **k: calls.append(1) or original(*a, **k)
+    assert not v.replan(5.0) and not calls                     # free flow already: no search at all
+    nxt = v.route[v.idx + 1]
+    sim.board.publish({nxt.id: 1e4}, 5.0)                       # the next link is suddenly jammed
+    assert v.replan(5.0) and calls and v.reroutes == 1
+    assert nxt not in v.route[v.idx + 1:]
